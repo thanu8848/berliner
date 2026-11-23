@@ -18,6 +18,8 @@ import type { Place } from './types/place'
 
 setWorkerUrl(workerUrl)
 
+const STORAGE_KEY = 'berlin-entdecken-places-v1'
+
 const statusColors = {
     unentdeckt: '#969AA1',
     vorgemerkt: '#DCA93E',
@@ -81,14 +83,49 @@ function App() {
     const mapRef = useRef<Map | null>(null)
     const selectionMarkerRef = useRef<Marker | null>(null)
 
-    // Unsere Ortsliste
-    const [allPlaces, setAllPlaces] = useState<Place[]>(places)
+
+    // Unsere Ortsliste aus localStorage laden
+    const [allPlaces, setAllPlaces] = useState<Place[]>(() => {
+        try {
+            const savedPlaces = localStorage.getItem(STORAGE_KEY)
+
+            if (!savedPlaces) {
+                return places
+            }
+
+            const parsed: unknown = JSON.parse(savedPlaces)
+
+            return Array.isArray(parsed)
+                ? parsed as Place[]
+                : places
+        } catch {
+            return places
+        }
+    })
+
+    // Ortsliste automatisch in localStorage speichern
+    useEffect(() => {
+        try {
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(allPlaces)
+            )
+        } catch (error) {
+            console.error(
+                'Orte konnten nicht gespeichert werden:',
+                error
+            )
+        }
+    }, [allPlaces])
+
+
 
     // Aktuell ausgewählter Standort
     const [selectedLocation, setSelectedLocation] = useState<{
         latitude: number
         longitude: number
     } | null>(null)
+
 
     // Karte einmalig erstellen
     useEffect(() => {
