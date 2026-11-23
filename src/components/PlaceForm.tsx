@@ -1,6 +1,9 @@
 
 import { useState } from 'react'
+import type { FormEvent } from 'react'
+
 import type {
+    Place,
     PlaceCategory,
     PlaceStatus,
     Seating,
@@ -22,8 +25,25 @@ const districts = [
     'Treptow-Köpenick'
 ]
 
-function PlaceForm() {
-    const [name, setName] = useState('')
+
+interface PlaceFormProps {
+    selectedLocation: {
+        latitude: number
+        longitude: number
+    } | null
+
+    onAddPlace: (place: Place) => void
+}
+
+function PlaceForm({
+                       selectedLocation,
+                       onAddPlace
+                   }: PlaceFormProps) {
+
+
+
+
+        const [name, setName] = useState('')
     const [category, setCategory] =
         useState<PlaceCategory>('restaurant')
     const [cuisine, setCuisine] = useState('')
@@ -42,11 +62,63 @@ function PlaceForm() {
     const [cozy, setCozy] = useState(false)
     const [cramped, setCramped] = useState(false)
 
+
+    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+
+        if (!selectedLocation || !name.trim() || !district) {
+            return
+        }
+
+        const newPlace: Place = {
+            id: crypto.randomUUID(),
+            name: name.trim(),
+            category,
+            cuisine: cuisine.split(',')
+                .map(item => item.trim())
+                .filter(Boolean),
+            district,
+            latitude: selectedLocation.latitude,
+            longitude: selectedLocation.longitude,
+            status,
+            website: website.trim() || undefined,
+            googleMapsUrl: googleMapsUrl.trim() || undefined,
+            seating: {
+                available: seating,
+                ...(seating === 'yes' && {
+                    capacity,
+                    indoor: indoor || undefined,
+                    outdoor: outdoor || undefined,
+                    cozy: cozy || undefined,
+                    cramped: cramped || undefined
+                })
+            }
+        }
+
+        onAddPlace(newPlace)
+
+        // Formular zurücksetzen
+        setName('')
+        setCategory('restaurant')
+        setCuisine('')
+        setDistrict('')
+        setWebsite('')
+        setGoogleMapsUrl('')
+        setStatus('vorgemerkt')
+        setSeating('unknown')
+        setCapacity('unknown')
+        setIndoor(false)
+        setOutdoor(false)
+        setCozy(false)
+        setCramped(false)
+    }
+
+
     return (
         <details className="place-form">
             <summary>+ Neuen Ort hinzufügen</summary>
 
-            <div className="place-form-content">
+            <form className="place-form-content" onSubmit={handleSubmit}>
                 <div className="form-grid">
                     <label>
                         Name des Ortes
@@ -238,11 +310,28 @@ function PlaceForm() {
                     )}
                 </div>
 
-                <p className="form-hint">
-                    Das Formular ist noch ein Entwurf.
-                    Die Speicherfunktion ergänzen wir im nächsten Schritt.
-                </p>
-            </div>
+
+                <div className="form-location">
+                    {selectedLocation ? (
+                        <p>
+                            Standort ausgewählt:
+                            {' '}{selectedLocation.latitude.toFixed(6)},
+                            {' '}{selectedLocation.longitude.toFixed(6)}
+                        </p>
+                    ) : (
+                        <p>Bitte zuerst einen Standort auf der Karte auswählen.</p>
+                    )}
+                </div>
+
+                <button
+                    type="submit"
+                    className="save-place-button"
+                    disabled={!selectedLocation || !name.trim() || !district}
+                >
+                    Ort hinzufügen
+                </button>
+
+            </form>
         </details>
     )
 }

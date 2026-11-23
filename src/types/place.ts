@@ -32,6 +32,7 @@ export interface SeatingDetails {
 }
 
 
+
 export interface Place {
     id: string
     name: string
@@ -40,11 +41,13 @@ export interface Place {
     longitude: number
     district: string
     status: PlaceStatus
+
     smokingAllowed?: boolean
     website?: string
     googleMapsUrl?: string
     notes?: string
+
     cuisine?: string[]
-    seating?: Seating
-    seatingDetails?: SeatingDetails
+    seating?: SeatingDetails
 }
+
