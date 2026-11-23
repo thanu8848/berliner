@@ -1,5 +1,5 @@
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 
 import type {
@@ -10,6 +10,7 @@ import type {
     SeatingCapacity
 } from '../types/place'
 
+// Die zwölf Berliner Bezirke
 const districts = [
     'Charlottenburg-Wilmersdorf',
     'Friedrichshain-Kreuzberg',
@@ -25,66 +26,139 @@ const districts = [
     'Treptow-Köpenick'
 ]
 
-
+// Informationen, die App.tsx an das Formular übergibt
 interface PlaceFormProps {
     selectedLocation: {
         latitude: number
         longitude: number
     } | null
 
+    editingPlace: Place | null
+
     onAddPlace: (place: Place) => void
+    onUpdatePlace: (place: Place) => void
+    onCancelEdit: () => void
 }
 
 function PlaceForm({
                        selectedLocation,
-                       onAddPlace
+                       editingPlace,
+                       onAddPlace,
+                       onUpdatePlace,
+                       onCancelEdit
                    }: PlaceFormProps) {
 
+    // Eingabefelder mit vorhandenen Daten initialisieren
+    const [name, setName] = useState(
+        editingPlace?.name ?? ''
+    )
 
+    const [category, setCategory] = useState<PlaceCategory>(
+        editingPlace?.category ?? 'restaurant'
+    )
 
+    const [cuisine, setCuisine] = useState(
+        editingPlace?.cuisine?.join(', ') ?? ''
+    )
 
-        const [name, setName] = useState('')
-    const [category, setCategory] =
-        useState<PlaceCategory>('restaurant')
-    const [cuisine, setCuisine] = useState('')
-    const [district, setDistrict] = useState('')
-    const [website, setWebsite] = useState('')
-    const [googleMapsUrl, setGoogleMapsUrl] = useState('')
-    const [status, setStatus] =
-        useState<PlaceStatus>('vorgemerkt')
+    const [district, setDistrict] = useState(
+        editingPlace?.district ?? ''
+    )
 
-    const [seating, setSeating] =
-        useState<Seating>('unknown')
-    const [capacity, setCapacity] =
-        useState<SeatingCapacity>('unknown')
-    const [indoor, setIndoor] = useState(false)
-    const [outdoor, setOutdoor] = useState(false)
-    const [cozy, setCozy] = useState(false)
-    const [cramped, setCramped] = useState(false)
+    const [website, setWebsite] = useState(
+        editingPlace?.website ?? ''
+    )
 
+    const [googleMapsUrl, setGoogleMapsUrl] = useState(
+        editingPlace?.googleMapsUrl ?? ''
+    )
 
+    const [status, setStatus] = useState<PlaceStatus>(
+        editingPlace?.status ?? 'vorgemerkt'
+    )
+
+    // Sitzmöglichkeiten
+    const [seating, setSeating] = useState<Seating>(
+        editingPlace?.seating?.available ?? 'unknown'
+    )
+
+    const [capacity, setCapacity] = useState<SeatingCapacity>(
+        editingPlace?.seating?.capacity ?? 'unknown'
+    )
+
+    const [indoor, setIndoor] = useState(
+        editingPlace?.seating?.indoor ?? false
+    )
+
+    const [outdoor, setOutdoor] = useState(
+        editingPlace?.seating?.outdoor ?? false
+    )
+
+    const [cozy, setCozy] = useState(
+        editingPlace?.seating?.cozy ?? false
+    )
+
+    const [cramped, setCramped] = useState(
+        editingPlace?.seating?.cramped ?? false
+    )
+
+    // Referenz zum ausklappbaren Formular
+    const detailsRef = useRef<HTMLDetailsElement>(null)
+
+    // Formular automatisch öffnen, wenn ein Ort bearbeitet wird
+    useEffect(() => {
+        if (editingPlace && detailsRef.current) {
+            detailsRef.current.open = true
+        }
+    }, [editingPlace])
+
+    // Standort für neuen oder bestehenden Ort festlegen
+    const formLocation = editingPlace
+        ? {
+            latitude: editingPlace.latitude,
+            longitude: editingPlace.longitude
+        }
+        : selectedLocation
+
+    // Formular speichern
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
-        if (!selectedLocation || !name.trim() || !district) {
+        // Pflichtfelder prüfen
+        if (!formLocation || !name.trim() || !district) {
             return
         }
 
-        const newPlace: Place = {
-            id: crypto.randomUUID(),
+        // Datensatz erstellen oder vorhandenen aktualisieren
+        const placeData: Place = {
+            // Vorhandene Informationen beibehalten
+            ...(editingPlace ?? {}),
+
+            // Bestehende ID behalten oder neue erzeugen
+            id: editingPlace?.id ?? crypto.randomUUID(),
+
             name: name.trim(),
             category,
-            cuisine: cuisine.split(',')
+
+            // Mehrere Küchenrichtungen durch Komma trennen
+            cuisine: cuisine
+                .split(',')
                 .map(item => item.trim())
                 .filter(Boolean),
+
             district,
-            latitude: selectedLocation.latitude,
-            longitude: selectedLocation.longitude,
+
+            latitude: formLocation.latitude,
+            longitude: formLocation.longitude,
+
             status,
+
             website: website.trim() || undefined,
             googleMapsUrl: googleMapsUrl.trim() || undefined,
+
             seating: {
                 available: seating,
+
                 ...(seating === 'yes' && {
                     capacity,
                     indoor: indoor || undefined,
@@ -95,7 +169,12 @@ function PlaceForm({
             }
         }
 
-        onAddPlace(newPlace)
+        // Unterscheiden zwischen Bearbeiten und Hinzufügen
+        if (editingPlace) {
+            onUpdatePlace(placeData)
+        } else {
+            onAddPlace(placeData)
+        }
 
         // Formular zurücksetzen
         setName('')
@@ -105,27 +184,46 @@ function PlaceForm({
         setWebsite('')
         setGoogleMapsUrl('')
         setStatus('vorgemerkt')
+
         setSeating('unknown')
         setCapacity('unknown')
         setIndoor(false)
         setOutdoor(false)
         setCozy(false)
         setCramped(false)
+
+        // Formular schließen
+        if (detailsRef.current) {
+            detailsRef.current.open = false
+        }
     }
 
-
     return (
-        <details className="place-form">
-            <summary>+ Neuen Ort hinzufügen</summary>
+        <details ref={detailsRef} className="place-form">
 
-            <form className="place-form-content" onSubmit={handleSubmit}>
+            <summary>
+                {editingPlace
+                    ? `Ort bearbeiten: ${editingPlace.name}`
+                    : '+ Neuen Ort hinzufügen'}
+            </summary>
+
+            <form
+                className="place-form-content"
+                onSubmit={handleSubmit}
+            >
+
+                {/* Allgemeine Informationen */}
+
                 <div className="form-grid">
+
                     <label>
                         Name des Ortes
                         <input
+                            type="text"
                             value={name}
                             onChange={e => setName(e.target.value)}
                             placeholder="z. B. Kebapci Hamdi Baba"
+                            required
                         />
                     </label>
 
@@ -148,9 +246,10 @@ function PlaceForm({
                     <label>
                         Küche / Angebot
                         <input
+                            type="text"
                             value={cuisine}
                             onChange={e => setCuisine(e.target.value)}
-                            placeholder="Döner, Vietnamesisch ..."
+                            placeholder="z. B. Döner, Vietnamesisch"
                         />
                     </label>
 
@@ -159,14 +258,21 @@ function PlaceForm({
                         <select
                             value={district}
                             onChange={e => setDistrict(e.target.value)}
+                            required
                         >
                             <option value="">Bitte auswählen</option>
+
                             {districts.map(d => (
-                                <option key={d} value={d}>{d}</option>
+                                <option key={d} value={d}>
+                                    {d}
+                                </option>
                             ))}
                         </select>
                     </label>
+
                 </div>
+
+                {/* Sitzmöglichkeiten */}
 
                 <h3>Sitzmöglichkeiten</h3>
 
@@ -186,6 +292,7 @@ function PlaceForm({
 
                 {seating === 'yes' && (
                     <div className="seating-details">
+
                         <label>
                             Anzahl der Sitzplätze
                             <select
@@ -203,11 +310,14 @@ function PlaceForm({
                         </label>
 
                         <div className="checkbox-group">
+
                             <label>
                                 <input
                                     type="checkbox"
                                     checked={indoor}
-                                    onChange={e => setIndoor(e.target.checked)}
+                                    onChange={e =>
+                                        setIndoor(e.target.checked)
+                                    }
                                 />
                                 Drinnen
                             </label>
@@ -216,7 +326,9 @@ function PlaceForm({
                                 <input
                                     type="checkbox"
                                     checked={outdoor}
-                                    onChange={e => setOutdoor(e.target.checked)}
+                                    onChange={e =>
+                                        setOutdoor(e.target.checked)
+                                    }
                                 />
                                 Draußen
                             </label>
@@ -225,7 +337,9 @@ function PlaceForm({
                                 <input
                                     type="checkbox"
                                     checked={cozy}
-                                    onChange={e => setCozy(e.target.checked)}
+                                    onChange={e =>
+                                        setCozy(e.target.checked)
+                                    }
                                 />
                                 Gemütlich
                             </label>
@@ -234,23 +348,31 @@ function PlaceForm({
                                 <input
                                     type="checkbox"
                                     checked={cramped}
-                                    onChange={e => setCramped(e.target.checked)}
+                                    onChange={e =>
+                                        setCramped(e.target.checked)
+                                    }
                                 />
                                 Eng
                             </label>
+
                         </div>
                     </div>
                 )}
 
+                {/* Weitere Informationen */}
+
                 <h3>Weitere Informationen</h3>
 
                 <div className="form-grid">
+
                     <label>
-                        Google-Maps-Link
+                        Google-Maps-Link (optional)
                         <input
                             type="url"
                             value={googleMapsUrl}
-                            onChange={e => setGoogleMapsUrl(e.target.value)}
+                            onChange={e =>
+                                setGoogleMapsUrl(e.target.value)
+                            }
                             placeholder="https://www.google.com/maps/..."
                         />
                     </label>
@@ -260,7 +382,9 @@ function PlaceForm({
                         <input
                             type="url"
                             value={website}
-                            onChange={e => setWebsite(e.target.value)}
+                            onChange={e =>
+                                setWebsite(e.target.value)
+                            }
                             placeholder="https://..."
                         />
                     </label>
@@ -273,31 +397,52 @@ function PlaceForm({
                                 setStatus(e.target.value as PlaceStatus)
                             }
                         >
-                            <option value="unentdeckt">Unentdeckt</option>
-                            <option value="vorgemerkt">Vorgemerkt</option>
-                            <option value="empfohlen">Empfohlen</option>
+                            <option value="unentdeckt">
+                                Unentdeckt
+                            </option>
+                            <option value="vorgemerkt">
+                                Vorgemerkt
+                            </option>
+                            <option value="empfohlen">
+                                Empfohlen
+                            </option>
                         </select>
                     </label>
+
                 </div>
 
+                {/* Vorschau */}
+
                 <div className="place-preview">
-                    <strong>Vorschau</strong>
+
+                    <strong>
+                        {editingPlace
+                            ? 'Vorschau der Änderungen'
+                            : 'Vorschau des neuen Ortes'}
+                    </strong>
+
                     <p>
                         {name || 'Neuer Ort'} ·
                         {' '}{cuisine || category} ·
                         {' '}{district || 'Kein Bezirk'}
                     </p>
+
                     <p>Status: {status}</p>
+
                     <p>
                         Sitzplätze: {
                         seating === 'yes' ? 'Ja' :
                             seating === 'no' ? 'Nein' : 'Unbekannt'
                     }
+
                         {seating === 'yes' &&
-                            ` · ${capacity === 'few' ? 'Wenige' :
-                                capacity === 'many' ? 'Viele' :
-                                    'Anzahl unbekannt'}`}
+                            ` · ${
+                                capacity === 'few' ? 'Wenige' :
+                                    capacity === 'many' ? 'Viele' :
+                                        'Anzahl unbekannt'
+                            }`}
                     </p>
+
                     {seating === 'yes' && (
                         <p>
                             {[
@@ -308,28 +453,48 @@ function PlaceForm({
                             ].filter(Boolean).join(' · ')}
                         </p>
                     )}
+
                 </div>
 
+                {/* Standortinformationen */}
 
                 <div className="form-location">
-                    {selectedLocation ? (
+                    {formLocation ? (
                         <p>
-                            Standort ausgewählt:
-                            {' '}{selectedLocation.latitude.toFixed(6)},
-                            {' '}{selectedLocation.longitude.toFixed(6)}
+                            Standort:
+                            {' '}{formLocation.latitude.toFixed(6)},
+                            {' '}{formLocation.longitude.toFixed(6)}
                         </p>
                     ) : (
-                        <p>Bitte zuerst einen Standort auf der Karte auswählen.</p>
+                        <p>
+                            Bitte zuerst einen Standort auf der Karte auswählen.
+                        </p>
                     )}
                 </div>
+
+                {/* Speichern */}
 
                 <button
                     type="submit"
                     className="save-place-button"
-                    disabled={!selectedLocation || !name.trim() || !district}
+                    disabled={!formLocation || !name.trim() || !district}
                 >
-                    Ort hinzufügen
+                    {editingPlace
+                        ? 'Änderungen speichern'
+                        : 'Ort hinzufügen'}
                 </button>
+
+                {/* Bearbeitung abbrechen */}
+
+                {editingPlace && (
+                    <button
+                        type="button"
+                        className="cancel-edit-button"
+                        onClick={onCancelEdit}
+                    >
+                        Bearbeitung abbrechen
+                    </button>
+                )}
 
             </form>
         </details>

@@ -168,3 +168,32 @@
   background: #b8b8b8;
   cursor: not-allowed;
 }
+
+
+.popup-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.popup-actions button {
+  padding: 7px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.popup-actions button:hover {
+  background: #f0f0f0;
+}
+
+.cancel-edit-button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  cursor: pointer;
+}
