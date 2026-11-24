@@ -73,6 +73,12 @@ function PlaceForm({
         editingPlace?.googleMapsUrl ?? ''
     )
 
+
+    const [notes, setNotes] = useState(
+        editingPlace?.notes ?? ''
+    )
+
+
     const [status, setStatus] = useState<PlaceStatus>(
         editingPlace?.status ?? 'vorgemerkt'
     )
@@ -152,7 +158,7 @@ function PlaceForm({
             longitude: formLocation.longitude,
 
             status,
-
+            notes: notes.trim() || undefined,
             website: website.trim() || undefined,
             googleMapsUrl: googleMapsUrl.trim() || undefined,
 
@@ -184,6 +190,7 @@ function PlaceForm({
         setWebsite('')
         setGoogleMapsUrl('')
         setStatus('vorgemerkt')
+        setNotes('')
 
         setSeating('unknown')
         setCapacity('unknown')
@@ -406,10 +413,23 @@ function PlaceForm({
                             <option value="empfohlen">
                                 Empfohlen
                             </option>
+                            <option value="nicht_empfohlen">
+                                Nicht empfohlen
+                            </option>
                         </select>
                     </label>
 
                 </div>
+
+                <label className="notes-field">
+                    Unsere Notizen
+                    <textarea
+                        value={notes}
+                        onChange={e => setNotes(e.target.value)}
+                        placeholder="Wie war der Ort? Was hat uns gefallen oder nicht gefallen?"
+                        rows={4}
+                    />
+                </label>
 
                 {/* Vorschau */}
 
@@ -451,6 +471,12 @@ function PlaceForm({
                                 cozy && 'Gemütlich',
                                 cramped && 'Eng'
                             ].filter(Boolean).join(' · ')}
+                        </p>
+                    )}
+
+                    {notes.trim() && (
+                        <p>
+                            Notiz: {notes}
                         </p>
                     )}
 

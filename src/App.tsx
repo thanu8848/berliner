@@ -26,7 +26,9 @@ const STORAGE_KEY = 'berlin-entdecken-places-v1'
 const statusColors = {
     unentdeckt: '#969AA1',
     vorgemerkt: '#DCA93E',
-    empfohlen: '#2D9B77'
+    empfohlen: '#2D9B77',
+    nicht_empfohlen: '#C45B58'
+
 }
 
 // Beschriftungen für Kategorien
@@ -42,7 +44,8 @@ const categoryLabels = {
 const statusLabels = {
     unentdeckt: 'Unentdeckt',
     vorgemerkt: 'Vorgemerkt',
-    empfohlen: 'Empfohlen'
+    empfohlen: 'Empfohlen',
+    nicht_empfohlen: 'Nicht empfohlen',
 }
 
 // Informationsfenster eines Ortes erstellen

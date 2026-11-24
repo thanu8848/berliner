@@ -197,3 +197,30 @@
   border-radius: 8px;
   cursor: pointer;
 }
+
+
+/* Notizfeld für persönliche Erfahrungen */
+
+.notes-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.notes-field textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
+  font: inherit;
+  resize: vertical;
+}
+
+.notes-field textarea:focus {
+  outline: 2px solid #2D9B77;
+  outline-offset: 2px;
+}

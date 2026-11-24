@@ -10,6 +10,7 @@ export type PlaceStatus =
     | 'unentdeckt'
     | 'vorgemerkt'
     | 'empfohlen'
+    | 'nicht_empfohlen'
 
 
 export type Seating =
