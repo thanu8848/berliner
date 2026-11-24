@@ -279,3 +279,92 @@
   color: #b91c1c;
   font-size: 14px;
 }
+
+
+/* Filter für die OpenStreetMap-Suche */
+
+.osm-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.osm-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.osm-filters select,
+.osm-filters input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.osm-result .osm-select-button {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #2D9B77;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .osm-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.google-import {
+  padding: 16px 24px;
+  background: #f8f8f6;
+}
+
+.google-import h2 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+
+.google-import label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.google-import-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.google-import-controls input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.google-import-controls button {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #2D9B77;
+  color: white;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .google-import-controls {
+    flex-direction: column;
+  }
+}

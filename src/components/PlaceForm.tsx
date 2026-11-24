@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
+import type { OsmPlace } from '../services/osm'
 
 import type {
     Place,
@@ -34,31 +35,34 @@ interface PlaceFormProps {
     } | null
 
     editingPlace: Place | null
-
+    osmSuggestion: OsmPlace | null
     onAddPlace: (place: Place) => void
     onUpdatePlace: (place: Place) => void
     onCancelEdit: () => void
+    googleMapsSuggestion: string | null
 }
 
 function PlaceForm({
                        selectedLocation,
                        editingPlace,
+                       osmSuggestion,
                        onAddPlace,
                        onUpdatePlace,
-                       onCancelEdit
+                       onCancelEdit,
+                       googleMapsSuggestion
                    }: PlaceFormProps) {
 
     // Eingabefelder mit vorhandenen Daten initialisieren
     const [name, setName] = useState(
-        editingPlace?.name ?? ''
+        editingPlace?.name ?? osmSuggestion?.name ?? ''
     )
 
     const [category, setCategory] = useState<PlaceCategory>(
-        editingPlace?.category ?? 'restaurant'
+        editingPlace?.category ?? osmSuggestion?.category ?? 'restaurant'
     )
 
     const [cuisine, setCuisine] = useState(
-        editingPlace?.cuisine?.join(', ') ?? ''
+        editingPlace?.cuisine?.join(', ') ?? osmSuggestion?.cuisine?.join(', ') ?? ''
     )
 
     const [district, setDistrict] = useState(
@@ -66,12 +70,16 @@ function PlaceForm({
     )
 
     const [website, setWebsite] = useState(
-        editingPlace?.website ?? ''
+        editingPlace?.website ?? osmSuggestion?.website ?? ''
     )
 
+
     const [googleMapsUrl, setGoogleMapsUrl] = useState(
-        editingPlace?.googleMapsUrl ?? ''
+        editingPlace?.googleMapsUrl ??
+        googleMapsSuggestion ??
+        ''
     )
+
 
 
     const [notes, setNotes] = useState(
@@ -112,19 +120,33 @@ function PlaceForm({
     const detailsRef = useRef<HTMLDetailsElement>(null)
 
     // Formular automatisch öffnen, wenn ein Ort bearbeitet wird
+
     useEffect(() => {
-        if (editingPlace && detailsRef.current) {
+        if ((editingPlace || osmSuggestion) && detailsRef.current) {
             detailsRef.current.open = true
+
+            detailsRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            })
         }
-    }, [editingPlace])
+    }, [editingPlace, osmSuggestion])
+
 
     // Standort für neuen oder bestehenden Ort festlegen
+
     const formLocation = editingPlace
         ? {
             latitude: editingPlace.latitude,
             longitude: editingPlace.longitude
         }
-        : selectedLocation
+        : osmSuggestion
+            ? {
+                latitude: osmSuggestion.latitude,
+                longitude: osmSuggestion.longitude
+            }
+            : selectedLocation
+
 
     // Formular speichern
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -208,11 +230,15 @@ function PlaceForm({
     return (
         <details ref={detailsRef} className="place-form">
 
+
             <summary>
                 {editingPlace
                     ? `Ort bearbeiten: ${editingPlace.name}`
-                    : '+ Neuen Ort hinzufügen'}
+                    : osmSuggestion
+                        ? `OSM-Ort übernehmen: ${osmSuggestion.name}`
+                        : '+ Neuen Ort hinzufügen'}
             </summary>
+
 
             <form
                 className="place-form-content"

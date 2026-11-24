@@ -14,11 +14,12 @@ import './App.css'
 
 import PlaceForm from './components/PlaceForm'
 import { places } from './data/places'
-import type { Place } from './types/place'
+import type { Place, PlaceCategory } from './types/place'
 
 // Neu: OpenStreetMap-Suche
 import { searchNearbyOsmPlaces } from './services/osm'
 import type { OsmPlace } from './services/osm'
+import { parseGoogleMapsLink } from './services/googleMaps'
 
 // MapLibre konfigurieren
 setWorkerUrl(workerUrl)
@@ -261,6 +262,23 @@ function App() {
     const [osmError, setOsmError] = useState('')
     const [osmSearched, setOsmSearched] = useState(false)
 
+    const [osmCategoryFilter, setOsmCategoryFilter] =
+        useState<PlaceCategory | 'all'>('all')
+
+    const [osmNameFilter, setOsmNameFilter] = useState('')
+
+    const [selectedOsmPlace, setSelectedOsmPlace] =
+        useState<OsmPlace | null>(null)
+
+    // Map-Link von Google Maps, den jemand eingibt
+    const [googleInput, setGoogleInput] = useState('')
+
+    // Nachricht, die nach der Prüfung des Google-Links angezeigt wird
+    const [googleMessage, setGoogleMessage] = useState('')
+    const [googleMapsSuggestion, setGoogleMapsSuggestion] =
+        useState<string | null>(null)
+
+
     // Karte erstellen
     useEffect(() => {
         if (!mapContainer.current) return
@@ -287,6 +305,11 @@ function App() {
                 longitude
             })
 
+            setSelectedOsmPlace(null)
+            setEditingPlace(null)
+            setGoogleMapsSuggestion(null)
+
+
             // Alte Suchergebnisse zurücksetzen
             osmRequestRef.current += 1
             setOsmResults([])
@@ -304,6 +327,9 @@ function App() {
                 .setLngLat([longitude, latitude])
                 .addTo(map)
         })
+
+
+
 
         // Karte beim Verlassen aufräumen
         return () => {
@@ -341,6 +367,8 @@ function App() {
                                 selectionMarkerRef.current?.remove()
                                 selectionMarkerRef.current = null
                                 setSelectedLocation(null)
+                                setSelectedOsmPlace(null)
+                                setGoogleMapsSuggestion(null)
 
                                 // OSM-Suche zurücksetzen
                                 osmRequestRef.current += 1
@@ -393,6 +421,8 @@ function App() {
         selectionMarkerRef.current?.remove()
         selectionMarkerRef.current = null
         setSelectedLocation(null)
+        setSelectedOsmPlace(null)
+        setGoogleMapsSuggestion(null)
 
         // OSM-Suche zurücksetzen
         osmRequestRef.current += 1
@@ -470,6 +500,136 @@ function App() {
         }
     }
 
+
+    const filteredOsmResults = osmResults.filter(place => {
+        const categoryMatches =
+            osmCategoryFilter === 'all' ||
+            place.category === osmCategoryFilter
+
+        const nameMatches = place.name
+            .toLocaleLowerCase('de-DE')
+            .includes(
+                osmNameFilter.trim().toLocaleLowerCase('de-DE')
+            )
+
+        return categoryMatches && nameMatches
+    })
+
+
+    const handleSelectOsmPlace = (osmPlace: OsmPlace) => {
+        // Vorhandene Bearbeitung beenden
+        setEditingPlace(null)
+
+        // OSM-Ort für das Formular merken
+        setSelectedOsmPlace(osmPlace)
+
+        // Exakte Koordinaten des gefundenen Ortes übernehmen
+        setSelectedLocation({
+            latitude: osmPlace.latitude,
+            longitude: osmPlace.longitude
+        })
+
+        // Bisherigen blauen Auswahlmarker entfernen
+        selectionMarkerRef.current?.remove()
+
+        const map = mapRef.current
+
+        if (map) {
+            // Blauen Marker an der tatsächlichen OSM-Position setzen
+            selectionMarkerRef.current = new Marker({
+                color: '#2563EB'
+            })
+                .setLngLat([
+                    osmPlace.longitude,
+                    osmPlace.latitude
+                ])
+                .addTo(map)
+
+            // Karte zum ausgewählten Ort bewegen
+            map.flyTo({
+                center: [
+                    osmPlace.longitude,
+                    osmPlace.latitude
+                ],
+                zoom: 16
+            })
+        }
+
+    }
+
+    // Google-Maps-Link prüfen und Koordinaten übernehmen
+
+    const handleGoogleMapsImport = () => {
+        const result = parseGoogleMapsLink(googleInput)
+
+        if (result.kind === 'invalid') {
+            setGoogleMessage(
+                'Bitte gib einen gültigen Google-Maps-Link ein.'
+            )
+            return
+        }
+
+        if (result.kind === 'short') {
+            setGoogleMessage(
+                'Das ist ein verkürzter Link. Öffne ihn im Browser, ' +
+                'kopiere die vollständige Adresse und füge sie hier ein.'
+            )
+            return
+        }
+
+        if (result.kind === 'no_coordinates') {
+            setGoogleMessage(
+                'Der Link enthält keine eindeutig erkennbaren ' +
+                'Zielkoordinaten. Bitte überprüfe den Ort manuell.'
+            )
+            return
+        }
+
+        const { latitude, longitude } = result
+
+        // Neues Importformular vorbereiten
+        setEditingPlace(null)
+        setSelectedOsmPlace(null)
+        setGoogleMapsSuggestion(googleInput.trim())
+
+        // Koordinaten übernehmen
+        setSelectedLocation({
+            latitude,
+            longitude
+        })
+
+        // Alte OSM-Suchergebnisse entfernen
+        osmRequestRef.current += 1
+        setOsmResults([])
+        setOsmLoading(false)
+        setOsmError('')
+        setOsmSearched(false)
+
+        // Marker setzen
+        selectionMarkerRef.current?.remove()
+
+        const map = mapRef.current
+
+        if (map) {
+            selectionMarkerRef.current = new Marker({
+                color: '#2563EB'
+            })
+                .setLngLat([longitude, latitude])
+                .addTo(map)
+
+            map.flyTo({
+                center: [longitude, latitude],
+                zoom: 16
+            })
+        }
+
+        setGoogleMessage(
+            'Koordinaten gefunden! Prüfe den blauen Marker ' +
+            'und suche anschließend passende OSM-Orte.'
+        )
+    }
+
+
     return (
         <main className="app">
 
@@ -479,11 +639,52 @@ function App() {
                 <p>Unsere gemeinsame Entdeckerkarte</p>
             </header>
 
+
+            <section className="google-import">
+                <h2>Ort aus Google Maps übernehmen</h2>
+
+                <label htmlFor="google-maps-input">
+                    Google-Maps-Link
+                </label>
+
+                <div className="google-import-controls">
+                    <input
+                        id="google-maps-input"
+                        type="url"
+                        value={googleInput}
+                        onChange={event =>
+                            setGoogleInput(event.target.value)
+                        }
+                        placeholder="https://www.google.com/maps/place/..."
+                    />
+
+                    <button
+                        type="button"
+                        onClick={handleGoogleMapsImport}
+                        disabled={!googleInput.trim()}
+                    >
+                        Link prüfen
+                    </button>
+                </div>
+
+                {googleMessage && (
+                    <p>{googleMessage}</p>
+                )}
+            </section>
+
+
             {/* Formular zum Hinzufügen und Bearbeiten */}
             <PlaceForm
-                key={editingPlace?.id ?? 'new'}
+                key={
+                    editingPlace?.id ??
+                    selectedOsmPlace?.osmId ??
+                    googleMapsSuggestion ??
+                    'new'
+                }
                 selectedLocation={selectedLocation}
                 editingPlace={editingPlace}
+                osmSuggestion={selectedOsmPlace}
+                googleMapsSuggestion={googleMapsSuggestion}
                 onAddPlace={handleAddPlace}
                 onUpdatePlace={handleUpdatePlace}
                 onCancelEdit={() => setEditingPlace(null)}
@@ -523,29 +724,83 @@ function App() {
                     )}
 
                     {/* Gefundene Orte */}
+
                     {osmResults.length > 0 && (
-                        <div className="osm-results">
-                            <h3>
-                                Gefundene Orte ({osmResults.length})
-                            </h3>
+                        <>
+                            {/* Filterbereich */}
+                            <div className="osm-filters">
 
-                            {osmResults.map(place => (
-                                <div
-                                    key={place.osmId}
-                                    className="osm-result"
-                                >
-                                    <strong>{place.name}</strong>
+                                <label>
+                                    Kategorie
+                                    <select
+                                        value={osmCategoryFilter}
+                                        onChange={e =>
+                                            setOsmCategoryFilter(
+                                                e.target.value as PlaceCategory | 'all'
+                                            )
+                                        }
+                                    >
+                                        <option value="all">Alle Orte</option>
+                                        <option value="restaurant">Restaurants</option>
+                                        <option value="imbiss">Imbisse</option>
+                                        <option value="cafe">Cafés</option>
+                                        <option value="bar">Bars</option>
+                                        <option value="kneipe">Kneipen</option>
+                                    </select>
+                                </label>
 
-                                    <span>
-                    {categoryLabels[place.category]}
+                                <label>
+                                    Nach Namen filtern
+                                    <input
+                                        type="search"
+                                        value={osmNameFilter}
+                                        onChange={e => setOsmNameFilter(e.target.value)}
+                                        placeholder="z. B. Café ..."
+                                    />
+                                </label>
+                            </div>
 
-                                        {place.cuisine.length > 0 &&
-                                            ` · ${place.cuisine.join(', ')}`}
-                  </span>
-                                </div>
-                            ))}
-                        </div>
+                            {/* Ergebnisübersicht */}
+                            <div className="osm-results">
+                                <h3>
+                                    {filteredOsmResults.length} von {osmResults.length}
+                                    {' '}Orten angezeigt
+                                </h3>
+
+                                {filteredOsmResults.map(place => (
+                                    <div
+                                        key={place.osmId}
+                                        className="osm-result"
+                                    >
+                                        <strong>{place.name}</strong>
+
+                                        <span>
+            {categoryLabels[place.category]}
+
+                                            {place.cuisine.length > 0 &&
+                                                ` · ${place.cuisine.join(', ')}`}
+          </span>
+
+                                        <button
+                                            type="button"
+                                            className="osm-select-button"
+                                            onClick={() => handleSelectOsmPlace(place)}
+                                        >
+                                            Ort übernehmen
+                                        </button>
+                                    </div>
+                                ))}
+
+                                {filteredOsmResults.length === 0 && (
+                                    <p>
+                                        Für diese Filter wurden keine passenden
+                                        Orte gefunden.
+                                    </p>
+                                )}
+                            </div>
+                        </>
                     )}
+
 
                     {/* Keine Treffer */}
                     {osmSearched &&
