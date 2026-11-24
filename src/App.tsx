@@ -16,6 +16,10 @@ import PlaceForm from './components/PlaceForm'
 import { places } from './data/places'
 import type { Place } from './types/place'
 
+// Neu: OpenStreetMap-Suche
+import { searchNearbyOsmPlaces } from './services/osm'
+import type { OsmPlace } from './services/osm'
+
 // MapLibre konfigurieren
 setWorkerUrl(workerUrl)
 
@@ -28,10 +32,9 @@ const statusColors = {
     vorgemerkt: '#DCA93E',
     empfohlen: '#2D9B77',
     nicht_empfohlen: '#C45B58'
-
 }
 
-// Beschriftungen für Kategorien
+// Beschriftungen der Kategorien
 const categoryLabels = {
     restaurant: 'Restaurant',
     imbiss: 'Imbiss',
@@ -40,15 +43,15 @@ const categoryLabels = {
     kneipe: 'Kneipe'
 }
 
-// Beschriftungen für die Entdeckerstatus
+// Beschriftungen der Entdeckerstatus
 const statusLabels = {
     unentdeckt: 'Unentdeckt',
     vorgemerkt: 'Vorgemerkt',
     empfohlen: 'Empfohlen',
-    nicht_empfohlen: 'Nicht empfohlen',
+    nicht_empfohlen: 'Nicht empfohlen'
 }
 
-// Informationsfenster eines Ortes erstellen
+// Informationsfenster für einen gespeicherten Ort
 function createPlacePopup(
     place: Place,
     onEdit: (place: Place) => void,
@@ -72,7 +75,7 @@ function createPlacePopup(
 
     content.append(title, category, status)
 
-    // Küche anzeigen
+    // Küche
     if (place.cuisine && place.cuisine.length > 0) {
         const cuisine = document.createElement('p')
         cuisine.textContent =
@@ -81,7 +84,7 @@ function createPlacePopup(
         content.append(cuisine)
     }
 
-    // Sitzmöglichkeiten anzeigen
+    // Sitzmöglichkeiten
     if (place.seating) {
         const seating = document.createElement('p')
 
@@ -131,7 +134,7 @@ function createPlacePopup(
         }
     }
 
-    // Optionale Notizen
+    // Notizen
     if (place.notes) {
         const notes = document.createElement('p')
         notes.textContent = place.notes
@@ -151,7 +154,7 @@ function createPlacePopup(
         content.append(websiteContainer)
     }
 
-    // Navigation über Google Maps
+    // Navigation mit Google Maps
     const navigation = document.createElement('a')
 
     const destination = encodeURIComponent(
@@ -170,11 +173,10 @@ function createPlacePopup(
 
     content.append(navigationContainer)
 
-    // Buttons für Bearbeiten und Löschen
+    // Aktionen: Bearbeiten und Löschen
     const actions = document.createElement('div')
     actions.className = 'popup-actions'
 
-    // Bearbeiten-Button
     const editButton = document.createElement('button')
     editButton.type = 'button'
     editButton.textContent = 'Bearbeiten'
@@ -184,7 +186,6 @@ function createPlacePopup(
         onEdit(place)
     })
 
-    // Löschen-Button
     const deleteButton = document.createElement('button')
     deleteButton.type = 'button'
     deleteButton.textContent = 'Löschen'
@@ -201,10 +202,14 @@ function createPlacePopup(
 }
 
 function App() {
-    // Referenzen für die Karte und ihre Marker
+    // Referenzen für Karte und Marker
     const mapContainer = useRef<HTMLDivElement | null>(null)
     const mapRef = useRef<Map | null>(null)
     const selectionMarkerRef = useRef<Marker | null>(null)
+
+    // Verhindert, dass alte OSM-Suchantworten
+    // eine neuere Standortauswahl überschreiben
+    const osmRequestRef = useRef(0)
 
     // Ortsliste aus localStorage laden
     const [allPlaces, setAllPlaces] = useState<Place[]>(() => {
@@ -225,7 +230,7 @@ function App() {
         }
     })
 
-    // Änderungen automatisch lokal speichern
+    // Ortsliste bei Änderungen automatisch speichern
     useEffect(() => {
         try {
             localStorage.setItem(
@@ -240,7 +245,7 @@ function App() {
         }
     }, [allPlaces])
 
-    // Aktuell ausgewählter Standort
+    // Standort, den jemand auf der Karte auswählt
     const [selectedLocation, setSelectedLocation] = useState<{
         latitude: number
         longitude: number
@@ -250,7 +255,13 @@ function App() {
     const [editingPlace, setEditingPlace] =
         useState<Place | null>(null)
 
-    // Karte einmalig erstellen
+    // NEU: Zustände für die OSM-Suche
+    const [osmResults, setOsmResults] = useState<OsmPlace[]>([])
+    const [osmLoading, setOsmLoading] = useState(false)
+    const [osmError, setOsmError] = useState('')
+    const [osmSearched, setOsmSearched] = useState(false)
+
+    // Karte erstellen
     useEffect(() => {
         if (!mapContainer.current) return
 
@@ -263,10 +274,10 @@ function App() {
 
         mapRef.current = map
 
-        // Zoom- und Navigationssteuerung
+        // Zoomsteuerung
         map.addControl(new NavigationControl(), 'top-right')
 
-        // Standort über einen Klick auf die Karte auswählen
+        // Standort durch Klick auf die Karte auswählen
         map.on('click', (event) => {
             const latitude = event.lngLat.lat
             const longitude = event.lngLat.lng
@@ -276,10 +287,17 @@ function App() {
                 longitude
             })
 
-            // Alten Auswahlmarker entfernen
+            // Alte Suchergebnisse zurücksetzen
+            osmRequestRef.current += 1
+            setOsmResults([])
+            setOsmError('')
+            setOsmLoading(false)
+            setOsmSearched(false)
+
+            // Bisherigen Auswahlmarker entfernen
             selectionMarkerRef.current?.remove()
 
-            // Neuen Auswahlmarker erstellen
+            // Neuen blauen Auswahlmarker setzen
             selectionMarkerRef.current = new Marker({
                 color: '#2563EB'
             })
@@ -287,7 +305,7 @@ function App() {
                 .addTo(map)
         })
 
-        // Ressourcen beim Entfernen der Karte freigeben
+        // Karte beim Verlassen aufräumen
         return () => {
             selectionMarkerRef.current?.remove()
             selectionMarkerRef.current = null
@@ -297,7 +315,7 @@ function App() {
         }
     }, [])
 
-    // Ortsmarker zeichnen und bei Änderungen aktualisieren
+    // Gespeicherte Ortsmarker erstellen und aktualisieren
     useEffect(() => {
         const map = mapRef.current
 
@@ -316,17 +334,23 @@ function App() {
                         createPlacePopup(
                             place,
 
-                            // Ort bearbeiten
+                            // Vorhandenen Ort bearbeiten
                             (placeToEdit) => {
                                 setEditingPlace(placeToEdit)
 
                                 selectionMarkerRef.current?.remove()
                                 selectionMarkerRef.current = null
-
                                 setSelectedLocation(null)
+
+                                // OSM-Suche zurücksetzen
+                                osmRequestRef.current += 1
+                                setOsmResults([])
+                                setOsmLoading(false)
+                                setOsmError('')
+                                setOsmSearched(false)
                             },
 
-                            // Ort löschen
+                            // Vorhandenen Ort löschen
                             (placeToDelete) => {
                                 const confirmed = window.confirm(
                                     `Möchtest du "${placeToDelete.name}" wirklich löschen?`
@@ -352,7 +376,7 @@ function App() {
                 .addTo(map)
         })
 
-        // Bisherige Marker bei Änderungen entfernen
+        // Alte Marker bei Änderungen entfernen
         return () => {
             markers.forEach(marker => marker.remove())
         }
@@ -365,12 +389,19 @@ function App() {
             newPlace
         ])
 
-        // Standortauswahl entfernen
+        // Auswahlmarker entfernen
         selectionMarkerRef.current?.remove()
         selectionMarkerRef.current = null
         setSelectedLocation(null)
 
-        // Karte zum neuen Ort bewegen
+        // OSM-Suche zurücksetzen
+        osmRequestRef.current += 1
+        setOsmResults([])
+        setOsmError('')
+        setOsmLoading(false)
+        setOsmSearched(false)
+
+        // Karte auf den neuen Ort zentrieren
         mapRef.current?.flyTo({
             center: [
                 newPlace.longitude,
@@ -401,13 +432,54 @@ function App() {
         })
     }
 
+    // NEU: OSM-Orte in der Nähe suchen
+    const handleSearchOsm = async () => {
+        if (!selectedLocation || osmLoading) return
+
+        const requestId = ++osmRequestRef.current
+
+        setOsmLoading(true)
+        setOsmError('')
+        setOsmResults([])
+        setOsmSearched(false)
+
+        try {
+            const results = await searchNearbyOsmPlaces(
+                selectedLocation.latitude,
+                selectedLocation.longitude
+            )
+
+            // Nur die aktuellste Suchantwort übernehmen
+            if (requestId !== osmRequestRef.current) return
+
+            setOsmResults(results)
+            setOsmSearched(true)
+
+        } catch (error) {
+            if (requestId !== osmRequestRef.current) return
+
+            console.error('OSM-Suche fehlgeschlagen:', error)
+
+            setOsmError(
+                'Die OpenStreetMap-Orte konnten nicht geladen werden.'
+            )
+        } finally {
+            if (requestId === osmRequestRef.current) {
+                setOsmLoading(false)
+            }
+        }
+    }
+
     return (
         <main className="app">
+
+            {/* Kopfbereich */}
             <header className="app-header">
                 <h1>Berlin entdecken</h1>
                 <p>Unsere gemeinsame Entdeckerkarte</p>
             </header>
 
+            {/* Formular zum Hinzufügen und Bearbeiten */}
             <PlaceForm
                 key={editingPlace?.id ?? 'new'}
                 selectedLocation={selectedLocation}
@@ -417,6 +489,7 @@ function App() {
                 onCancelEdit={() => setEditingPlace(null)}
             />
 
+            {/* Ausgewählte Koordinaten anzeigen */}
             {selectedLocation && !editingPlace && (
                 <div className="location-info">
                     <strong>Ausgewählter Standort:</strong>
@@ -428,7 +501,71 @@ function App() {
                 </div>
             )}
 
-            <div ref={mapContainer} className="map" />
+            {/* NEU: OpenStreetMap-Suche */}
+            {selectedLocation && !editingPlace && (
+                <section className="osm-search">
+
+                    <button
+                        type="button"
+                        onClick={handleSearchOsm}
+                        disabled={osmLoading}
+                    >
+                        {osmLoading
+                            ? 'Suche läuft ...'
+                            : 'OSM-Orte in der Nähe suchen'}
+                    </button>
+
+                    {/* Fehler anzeigen */}
+                    {osmError && (
+                        <p className="osm-error">
+                            {osmError}
+                        </p>
+                    )}
+
+                    {/* Gefundene Orte */}
+                    {osmResults.length > 0 && (
+                        <div className="osm-results">
+                            <h3>
+                                Gefundene Orte ({osmResults.length})
+                            </h3>
+
+                            {osmResults.map(place => (
+                                <div
+                                    key={place.osmId}
+                                    className="osm-result"
+                                >
+                                    <strong>{place.name}</strong>
+
+                                    <span>
+                    {categoryLabels[place.category]}
+
+                                        {place.cuisine.length > 0 &&
+                                            ` · ${place.cuisine.join(', ')}`}
+                  </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Keine Treffer */}
+                    {osmSearched &&
+                        !osmLoading &&
+                        osmResults.length === 0 &&
+                        !osmError && (
+                            <p>
+                                Im Umkreis von 100 Metern wurden
+                                keine passenden Orte gefunden.
+                            </p>
+                        )}
+                </section>
+            )}
+
+            {/* Interaktive Berlin-Karte */}
+            <div
+                ref={mapContainer}
+                className="map"
+            />
+
         </main>
     )
 }

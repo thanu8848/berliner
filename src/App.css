@@ -224,3 +224,58 @@
   outline: 2px solid #2D9B77;
   outline-offset: 2px;
 }
+
+
+/* OpenStreetMap-Suche */
+
+.osm-search {
+  padding: 12px 24px;
+  background: #f8f8f6;
+  border-bottom: 1px solid #ddd;
+}
+
+.osm-search button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+.osm-search button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.osm-results {
+  margin-top: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.osm-results h3 {
+  font-size: 15px;
+  margin: 0 0 10px;
+}
+
+.osm-result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.osm-result span {
+  font-size: 13px;
+  color: #666;
+}
+
+.osm-error {
+  color: #b91c1c;
+  font-size: 14px;
+}
