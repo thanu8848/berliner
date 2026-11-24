@@ -19,7 +19,12 @@ import type { Place, PlaceCategory } from './types/place'
 // Neu: OpenStreetMap-Suche
 import { searchNearbyOsmPlaces } from './services/osm'
 import type { OsmPlace } from './services/osm'
-import { parseGoogleMapsLink } from './services/googleMaps'
+
+import {
+    parseGoogleMapsLink,
+    extractGoogleMapsPlaceName
+} from './services/googleMaps'
+
 
 // MapLibre konfigurieren
 setWorkerUrl(workerUrl)
@@ -277,6 +282,9 @@ function App() {
     const [googleMessage, setGoogleMessage] = useState('')
     const [googleMapsSuggestion, setGoogleMapsSuggestion] =
         useState<string | null>(null)
+    const [googlePlaceName, setGooglePlaceName] =
+        useState<string | null>(null)
+
 
 
     // Karte erstellen
@@ -307,7 +315,7 @@ function App() {
 
             setSelectedOsmPlace(null)
             setEditingPlace(null)
-            setGoogleMapsSuggestion(null)
+            setGooglePlaceName(null)
 
 
             // Alte Suchergebnisse zurücksetzen
@@ -368,7 +376,7 @@ function App() {
                                 selectionMarkerRef.current = null
                                 setSelectedLocation(null)
                                 setSelectedOsmPlace(null)
-                                setGoogleMapsSuggestion(null)
+                                setGooglePlaceName(null)
 
                                 // OSM-Suche zurücksetzen
                                 osmRequestRef.current += 1
@@ -422,7 +430,7 @@ function App() {
         selectionMarkerRef.current = null
         setSelectedLocation(null)
         setSelectedOsmPlace(null)
-        setGoogleMapsSuggestion(null)
+        setGooglePlaceName(null)
 
         // OSM-Suche zurücksetzen
         osmRequestRef.current += 1
@@ -462,10 +470,13 @@ function App() {
         })
     }
 
-    // NEU: OSM-Orte in der Nähe suchen
-    const handleSearchOsm = async () => {
-        if (!selectedLocation || osmLoading) return
 
+    // Gemeinsame OSM-Suchfunktion
+    // Kann sowohl manuell als auch automatisch aufgerufen werden
+    const searchOsmAtLocation = async (
+        latitude: number,
+        longitude: number
+    ) => {
         const requestId = ++osmRequestRef.current
 
         setOsmLoading(true)
@@ -475,30 +486,50 @@ function App() {
 
         try {
             const results = await searchNearbyOsmPlaces(
-                selectedLocation.latitude,
-                selectedLocation.longitude
+                latitude,
+                longitude
             )
 
-            // Nur die aktuellste Suchantwort übernehmen
+            // Veraltete Suchantworten ignorieren
             if (requestId !== osmRequestRef.current) return
 
             setOsmResults(results)
             setOsmSearched(true)
+
 
         } catch (error) {
             if (requestId !== osmRequestRef.current) return
 
             console.error('OSM-Suche fehlgeschlagen:', error)
 
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : 'Unbekannter Fehler'
+
             setOsmError(
-                'Die OpenStreetMap-Orte konnten nicht geladen werden.'
+                `OSM-Suche fehlgeschlagen: ${errorMessage}`
             )
-        } finally {
+
+
+
+    } finally {
             if (requestId === osmRequestRef.current) {
                 setOsmLoading(false)
             }
         }
     }
+
+    // Manuelle OSM-Suche über den bisherigen Button
+    const handleSearchOsm = () => {
+        if (!selectedLocation || osmLoading) return
+
+        void searchOsmAtLocation(
+            selectedLocation.latitude,
+            selectedLocation.longitude
+        )
+    }
+
 
 
     const filteredOsmResults = osmResults.filter(place => {
@@ -587,10 +618,31 @@ function App() {
 
         const { latitude, longitude } = result
 
+
         // Neues Importformular vorbereiten
+
+// Google-Maps-Daten übernehmen
+        const placeName = extractGoogleMapsPlaceName(googleInput)
+
         setEditingPlace(null)
         setSelectedOsmPlace(null)
         setGoogleMapsSuggestion(googleInput.trim())
+        setGooglePlaceName(placeName)
+
+// Bisherige OSM-Suchergebnisse zurücksetzen
+        osmRequestRef.current += 1
+        setOsmResults([])
+        setOsmLoading(false)
+        setOsmError('')
+        setOsmSearched(false)
+        setOsmCategoryFilter('all')
+        setOsmNameFilter('')
+
+
+        // Alte Suchfilter zurücksetzen
+        setOsmCategoryFilter('all')
+        setOsmNameFilter('')
+
 
         // Koordinaten übernehmen
         setSelectedLocation({
@@ -598,12 +650,6 @@ function App() {
             longitude
         })
 
-        // Alte OSM-Suchergebnisse entfernen
-        osmRequestRef.current += 1
-        setOsmResults([])
-        setOsmLoading(false)
-        setOsmError('')
-        setOsmSearched(false)
 
         // Marker setzen
         selectionMarkerRef.current?.remove()
@@ -623,10 +669,21 @@ function App() {
             })
         }
 
+
+        // Hinweis für die Benutzeroberfläche
+
         setGoogleMessage(
-            'Koordinaten gefunden! Prüfe den blauen Marker ' +
-            'und suche anschließend passende OSM-Orte.'
+            placeName
+                ? `Ort erkannt: ${placeName}. ` +
+                'Bitte überprüfe den Marker und ergänze die Angaben im Formular.'
+                : 'Koordinaten erkannt. Bitte trage den Namen im Formular ein ' +
+                'oder suche bei Bedarf nach OSM-Orten in der Nähe.'
         )
+
+
+
+
+
     }
 
 
@@ -685,6 +742,7 @@ function App() {
                 editingPlace={editingPlace}
                 osmSuggestion={selectedOsmPlace}
                 googleMapsSuggestion={googleMapsSuggestion}
+                googlePlaceName={googlePlaceName}
                 onAddPlace={handleAddPlace}
                 onUpdatePlace={handleUpdatePlace}
                 onCancelEdit={() => setEditingPlace(null)}

@@ -110,3 +110,34 @@ export function parseGoogleMapsLink(
     // als genauer Restaurantstandort übernommen.
     return { kind: 'no_coordinates' }
 }
+
+
+export function extractGoogleMapsPlaceName(
+    input: string
+): string | null {
+    try {
+        const url = new URL(input.trim())
+
+        // Namen aus /maps/place/NAME/ auslesen
+        const match = url.pathname.match(
+            /\/maps\/place\/([^/]+)/
+        )
+
+        if (!match) return null
+
+        // Pluszeichen und Sonderzeichen umwandeln
+        const decodedName = decodeURIComponent(
+            match[1].replace(/\+/g, ' ')
+        )
+
+        // Zusätze nach " - " zunächst entfernen
+        const name = decodedName
+            .split(/\s+-\s+/)[0]
+            .trim()
+
+        return name || null
+
+    } catch {
+        return null
+    }
+}

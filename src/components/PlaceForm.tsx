@@ -40,6 +40,7 @@ interface PlaceFormProps {
     onUpdatePlace: (place: Place) => void
     onCancelEdit: () => void
     googleMapsSuggestion: string | null
+    googlePlaceName: string | null
 }
 
 function PlaceForm({
@@ -49,12 +50,16 @@ function PlaceForm({
                        onAddPlace,
                        onUpdatePlace,
                        onCancelEdit,
-                       googleMapsSuggestion
+                       googleMapsSuggestion,
+                       googlePlaceName
                    }: PlaceFormProps) {
 
     // Eingabefelder mit vorhandenen Daten initialisieren
     const [name, setName] = useState(
-        editingPlace?.name ?? osmSuggestion?.name ?? ''
+        editingPlace?.name ??
+        osmSuggestion?.name ??
+        googlePlaceName ??
+        ''
     )
 
     const [category, setCategory] = useState<PlaceCategory>(
@@ -122,15 +127,13 @@ function PlaceForm({
     // Formular automatisch öffnen, wenn ein Ort bearbeitet wird
 
     useEffect(() => {
-        if ((editingPlace || osmSuggestion) && detailsRef.current) {
+        if (
+            (editingPlace || osmSuggestion || googleMapsSuggestion) &&
+            detailsRef.current
+        ) {
             detailsRef.current.open = true
-
-            detailsRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            })
         }
-    }, [editingPlace, osmSuggestion])
+    }, [editingPlace, osmSuggestion, googleMapsSuggestion])
 
 
     // Standort für neuen oder bestehenden Ort festlegen
