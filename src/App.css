@@ -368,3 +368,25 @@
     flex-direction: column;
   }
 }
+
+
+.osm-match-info {
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.osm-other-results {
+  margin-top: 12px;
+}
+
+.osm-other-results summary {
+  padding: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  border-radius: 8px;
+  background: #e9ecef;
+}
+
+.osm-other-results .osm-result {
+  margin-top: 8px;
+}

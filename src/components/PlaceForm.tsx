@@ -36,6 +36,7 @@ interface PlaceFormProps {
 
     editingPlace: Place | null
     osmSuggestion: OsmPlace | null
+    osmEnrichment: OsmPlace | null
     onAddPlace: (place: Place) => void
     onUpdatePlace: (place: Place) => void
     onCancelEdit: () => void
@@ -47,6 +48,7 @@ function PlaceForm({
                        selectedLocation,
                        editingPlace,
                        osmSuggestion,
+                       osmEnrichment,
                        onAddPlace,
                        onUpdatePlace,
                        onCancelEdit,
@@ -65,6 +67,9 @@ function PlaceForm({
     const [category, setCategory] = useState<PlaceCategory>(
         editingPlace?.category ?? osmSuggestion?.category ?? 'restaurant'
     )
+
+    const categoryEditedRef = useRef(false)
+
 
     const [cuisine, setCuisine] = useState(
         editingPlace?.cuisine?.join(', ') ?? osmSuggestion?.cuisine?.join(', ') ?? ''
@@ -134,6 +139,46 @@ function PlaceForm({
             detailsRef.current.open = true
         }
     }, [editingPlace, osmSuggestion, googleMapsSuggestion])
+
+
+// Fehlende Informationen aus OSM ergänzen
+    useEffect(() => {
+        if (!osmEnrichment || !googleMapsSuggestion || editingPlace) {
+            return
+        }
+
+        // Kategorie nur übernehmen, wenn sie noch
+        // nicht manuell verändert wurde
+        if (!categoryEditedRef.current) {
+            setCategory(osmEnrichment.category)
+        }
+
+        // Küche nur ergänzen, wenn das Feld leer ist
+        setCuisine(current =>
+            current.trim()
+                ? current
+                : osmEnrichment.cuisine.join(', ')
+        )
+
+        // Website nur ergänzen, wenn das Feld leer ist
+        setWebsite(current =>
+            current.trim()
+                ? current
+                : osmEnrichment.website ?? ''
+        )
+
+        // Formular öffnen und sichtbar machen
+        if (detailsRef.current) {
+            detailsRef.current.open = true
+
+            detailsRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            })
+        }
+
+    }, [osmEnrichment, googleMapsSuggestion, editingPlace])
+
 
 
     // Standort für neuen oder bestehenden Ort festlegen
@@ -267,9 +312,10 @@ function PlaceForm({
                         Kategorie
                         <select
                             value={category}
-                            onChange={e =>
+                            onChange={e => {
+                                categoryEditedRef.current = true
                                 setCategory(e.target.value as PlaceCategory)
-                            }
+                            }}
                         >
                             <option value="restaurant">Restaurant</option>
                             <option value="imbiss">Imbiss</option>

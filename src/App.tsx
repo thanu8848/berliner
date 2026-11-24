@@ -57,6 +57,37 @@ const statusLabels = {
     nicht_empfohlen: 'Nicht empfohlen'
 }
 
+
+function normalizePlaceName(name: string): string {
+    return name
+        .toLocaleLowerCase('de-DE')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/ß/g, 'ss')
+        .replace(/[^a-z0-9]/g, '')
+}
+
+function isSimilarPlaceName(
+    googleName: string,
+    osmName: string
+): boolean {
+    const google = normalizePlaceName(googleName)
+    const osm = normalizePlaceName(osmName)
+
+    if (!google || !osm) return false
+
+    // Namen stimmen vollständig überein
+    if (google === osm) return true
+
+    // Ein Name enthält den anderen
+    if (google.length >= 8 && osm.length >= 8) {
+        return google.includes(osm) || osm.includes(google)
+    }
+
+    return false
+}
+
+
 // Informationsfenster für einen gespeicherten Ort
 function createPlacePopup(
     place: Place,
@@ -285,6 +316,9 @@ function App() {
     const [googlePlaceName, setGooglePlaceName] =
         useState<string | null>(null)
 
+    const [osmEnrichment, setOsmEnrichment] =
+        useState<OsmPlace | null>(null)
+
 
 
     // Karte erstellen
@@ -316,6 +350,8 @@ function App() {
             setSelectedOsmPlace(null)
             setEditingPlace(null)
             setGooglePlaceName(null)
+            setGoogleMapsSuggestion(null)
+            setOsmEnrichment(null)
 
 
             // Alte Suchergebnisse zurücksetzen
@@ -377,6 +413,8 @@ function App() {
                                 setSelectedLocation(null)
                                 setSelectedOsmPlace(null)
                                 setGooglePlaceName(null)
+                                setGoogleMapsSuggestion(null)
+                                setOsmEnrichment(null)
 
                                 // OSM-Suche zurücksetzen
                                 osmRequestRef.current += 1
@@ -431,6 +469,9 @@ function App() {
         setSelectedLocation(null)
         setSelectedOsmPlace(null)
         setGooglePlaceName(null)
+        setGoogleMapsSuggestion(null)
+        setOsmEnrichment(null)
+
 
         // OSM-Suche zurücksetzen
         osmRequestRef.current += 1
@@ -546,6 +587,20 @@ function App() {
         return categoryMatches && nameMatches
     })
 
+// OSM-Treffer mit ähnlichem Namen zum Google-Ort
+    const matchingOsmResults = googlePlaceName
+        ? filteredOsmResults.filter(place =>
+            isSimilarPlaceName(googlePlaceName, place.name)
+        )
+        : []
+
+// Übrige Treffer aus der Umgebung
+    const otherOsmResults = googlePlaceName
+        ? filteredOsmResults.filter(place =>
+            !isSimilarPlaceName(googlePlaceName, place.name)
+        )
+        : filteredOsmResults
+
 
     const handleSelectOsmPlace = (osmPlace: OsmPlace) => {
         // Vorhandene Bearbeitung beenden
@@ -626,6 +681,7 @@ function App() {
 
         setEditingPlace(null)
         setSelectedOsmPlace(null)
+        setOsmEnrichment(null)
         setGoogleMapsSuggestion(googleInput.trim())
         setGooglePlaceName(placeName)
 
@@ -638,10 +694,6 @@ function App() {
         setOsmCategoryFilter('all')
         setOsmNameFilter('')
 
-
-        // Alte Suchfilter zurücksetzen
-        setOsmCategoryFilter('all')
-        setOsmNameFilter('')
 
 
         // Koordinaten übernehmen
@@ -685,6 +737,52 @@ function App() {
 
 
     }
+
+
+
+    const renderOsmResult = (place: OsmPlace) => {
+        // Prüfen, ob der OSM-Treffer zum Google-Ort passt
+        const isGoogleMatch =
+            googleMapsSuggestion !== null &&
+            googlePlaceName !== null &&
+            isSimilarPlaceName(googlePlaceName, place.name)
+
+        return (
+            <div
+                key={place.osmId}
+                className="osm-result"
+            >
+                <strong>{place.name}</strong>
+
+                <span>
+        {categoryLabels[place.category]}
+
+                    {place.cuisine.length > 0 &&
+                        ` · ${place.cuisine.join(', ')}`}
+      </span>
+
+                <button
+                    type="button"
+                    className="osm-select-button"
+                    onClick={() => {
+                        if (isGoogleMatch) {
+                            // Fehlende Informationen ergänzen
+                            setOsmEnrichment(place)
+                        } else {
+                            // Vollständigen OSM-Ort übernehmen
+                            handleSelectOsmPlace(place)
+                        }
+                    }}
+                >
+                    {isGoogleMatch
+                        ? 'Fehlende Angaben ergänzen'
+                        : 'Ort übernehmen'}
+                </button>
+            </div>
+        )
+    }
+
+
 
 
     return (
@@ -743,6 +841,9 @@ function App() {
                 osmSuggestion={selectedOsmPlace}
                 googleMapsSuggestion={googleMapsSuggestion}
                 googlePlaceName={googlePlaceName}
+
+                osmEnrichment={osmEnrichment}
+
                 onAddPlace={handleAddPlace}
                 onUpdatePlace={handleUpdatePlace}
                 onCancelEdit={() => setEditingPlace(null)}
@@ -769,9 +870,13 @@ function App() {
                         onClick={handleSearchOsm}
                         disabled={osmLoading}
                     >
+
                         {osmLoading
                             ? 'Suche läuft ...'
-                            : 'OSM-Orte in der Nähe suchen'}
+                            : googleMapsSuggestion
+                                ? 'Weitere Informationen aus OSM suchen'
+                                : 'OSM-Orte in der Nähe suchen'}
+
                     </button>
 
                     {/* Fehler anzeigen */}
@@ -819,43 +924,57 @@ function App() {
                             </div>
 
                             {/* Ergebnisübersicht */}
+
                             <div className="osm-results">
                                 <h3>
                                     {filteredOsmResults.length} von {osmResults.length}
                                     {' '}Orten angezeigt
                                 </h3>
 
-                                {filteredOsmResults.map(place => (
-                                    <div
-                                        key={place.osmId}
-                                        className="osm-result"
-                                    >
-                                        <strong>{place.name}</strong>
-
-                                        <span>
-            {categoryLabels[place.category]}
-
-                                            {place.cuisine.length > 0 &&
-                                                ` · ${place.cuisine.join(', ')}`}
-          </span>
-
-                                        <button
-                                            type="button"
-                                            className="osm-select-button"
-                                            onClick={() => handleSelectOsmPlace(place)}
-                                        >
-                                            Ort übernehmen
-                                        </button>
+                                {/* Mögliche Treffer zum Google-Maps-Ort */}
+                                {googlePlaceName && (
+                                    <div className="osm-match-info">
+                                        {matchingOsmResults.length > 0 ? (
+                                            <p>
+                                                Mögliche passende OSM-Einträge für
+                                                {' '}<strong>{googlePlaceName}</strong>:
+                                            </p>
+                                        ) : (
+                                            <p>
+                                                Kein eindeutiger Namens-Treffer für
+                                                {' '}<strong>{googlePlaceName}</strong> gefunden.
+                                                Du kannst den Ort trotzdem manuell speichern.
+                                            </p>
+                                        )}
                                     </div>
-                                ))}
+                                )}
+
+                                {/* Namensähnliche Treffer zuerst */}
+                                {matchingOsmResults.map(renderOsmResult)}
+
+                                {/* Weitere Treffer nur bei Bedarf anzeigen */}
+                                {otherOsmResults.length > 0 && (
+                                    googlePlaceName ? (
+                                        <details className="osm-other-results">
+                                            <summary>
+                                                Weitere Orte in der Umgebung anzeigen
+                                                {' '}({otherOsmResults.length})
+                                            </summary>
+
+                                            {otherOsmResults.map(renderOsmResult)}
+                                        </details>
+                                    ) : (
+                                        otherOsmResults.map(renderOsmResult)
+                                    )
+                                )}
 
                                 {filteredOsmResults.length === 0 && (
                                     <p>
-                                        Für diese Filter wurden keine passenden
-                                        Orte gefunden.
+                                        Für diese Filter wurden keine passenden Orte gefunden.
                                     </p>
                                 )}
                             </div>
+
                         </>
                     )}
 
