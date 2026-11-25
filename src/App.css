@@ -390,3 +390,43 @@
 .osm-other-results .osm-result {
   margin-top: 8px;
 }
+
+.neighborhood-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.neighborhood-field small {
+  color: #555;
+  font-size: 12px;
+}
+
+.neighborhood-suggestions {
+  position: absolute;
+  top: 64px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px #0002;
+}
+
+.neighborhood-suggestions li {
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.neighborhood-suggestions li:hover,
+.neighborhood-suggestions li[aria-selected="true"] {
+  background: #e8f0fe;
+  color: #153e75;
+}

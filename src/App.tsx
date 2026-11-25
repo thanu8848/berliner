@@ -103,7 +103,7 @@ function createPlacePopup(
     // Kategorie und Bezirk
     const category = document.createElement('p')
     category.textContent =
-        `${categoryLabels[place.category]} · ${place.district}`
+        `${categoryLabels[place.category]} · ${place.neighborhood ?? place.district}`
 
     // Entdeckerstatus
     const status = document.createElement('p')

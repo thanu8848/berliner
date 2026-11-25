@@ -1,7 +1,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
+import NeighborhoodInput from './NeighborhoodInput'
 import type { OsmPlace } from '../services/osm'
+import {
+    getDistrictForNeighborhood
+} from '../data/berlinOrtsteile'
 
 import type {
     Place,
@@ -10,22 +14,6 @@ import type {
     Seating,
     SeatingCapacity
 } from '../types/place'
-
-// Die zwölf Berliner Bezirke
-const districts = [
-    'Charlottenburg-Wilmersdorf',
-    'Friedrichshain-Kreuzberg',
-    'Lichtenberg',
-    'Marzahn-Hellersdorf',
-    'Mitte',
-    'Neukölln',
-    'Pankow',
-    'Reinickendorf',
-    'Spandau',
-    'Steglitz-Zehlendorf',
-    'Tempelhof-Schöneberg',
-    'Treptow-Köpenick'
-]
 
 // Informationen, die App.tsx an das Formular übergibt
 interface PlaceFormProps {
@@ -75,8 +63,8 @@ function PlaceForm({
         editingPlace?.cuisine?.join(', ') ?? osmSuggestion?.cuisine?.join(', ') ?? ''
     )
 
-    const [district, setDistrict] = useState(
-        editingPlace?.district ?? ''
+    const [neighborhood, setNeighborhood] = useState(
+        editingPlace?.neighborhood ?? ''
     )
 
     const [website, setWebsite] = useState(
@@ -201,9 +189,13 @@ function PlaceForm({
         event.preventDefault()
 
         // Pflichtfelder prüfen
-        if (!formLocation || !name.trim() || !district) {
+        if (!formLocation || !name.trim() || !neighborhood) {
             return
         }
+
+        const district = getDistrictForNeighborhood(neighborhood)
+
+        if (!district) return
 
         // Datensatz erstellen oder vorhandenen aktualisieren
         const placeData: Place = {
@@ -223,6 +215,7 @@ function PlaceForm({
                 .filter(Boolean),
 
             district,
+            neighborhood,
 
             latitude: formLocation.latitude,
             longitude: formLocation.longitude,
@@ -256,7 +249,7 @@ function PlaceForm({
         setName('')
         setCategory('restaurant')
         setCuisine('')
-        setDistrict('')
+        setNeighborhood('')
         setWebsite('')
         setGoogleMapsUrl('')
         setStatus('vorgemerkt')
@@ -335,22 +328,10 @@ function PlaceForm({
                         />
                     </label>
 
-                    <label>
-                        Bezirk
-                        <select
-                            value={district}
-                            onChange={e => setDistrict(e.target.value)}
-                            required
-                        >
-                            <option value="">Bitte auswählen</option>
-
-                            {districts.map(d => (
-                                <option key={d} value={d}>
-                                    {d}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
+                    <NeighborhoodInput
+                        value={neighborhood}
+                        onChange={setNeighborhood}
+                    />
 
                 </div>
 
@@ -519,7 +500,7 @@ function PlaceForm({
                     <p>
                         {name || 'Neuer Ort'} ·
                         {' '}{cuisine || category} ·
-                        {' '}{district || 'Kein Bezirk'}
+                        {' '}{getDistrictForNeighborhood(neighborhood) ? neighborhood : 'Kein Ortsteil'}
                     </p>
 
                     <p>Status: {status}</p>
@@ -578,7 +559,7 @@ function PlaceForm({
                 <button
                     type="submit"
                     className="save-place-button"
-                    disabled={!formLocation || !name.trim() || !district}
+                    disabled={!formLocation || !name.trim() || !getDistrictForNeighborhood(neighborhood)}
                 >
                     {editingPlace
                         ? 'Änderungen speichern'

@@ -41,6 +41,7 @@ export interface Place {
     latitude: number
     longitude: number
     district: string
+    neighborhood?: string
     status: PlaceStatus
 
     smokingAllowed?: boolean
