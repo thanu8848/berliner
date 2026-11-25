@@ -430,3 +430,17 @@
   background: #e8f0fe;
   color: #153e75;
 }
+
+.duplicate-notice {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid #dca93e;
+  border-radius: 10px;
+  background: #fff9e9;
+  color: #3d321b;
+}
+
+.duplicate-notice p { margin: 0 0 8px; }
+.duplicate-match { margin: 14px 0; }
+.duplicate-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.duplicate-notice button { padding: 9px 12px; cursor: pointer; }

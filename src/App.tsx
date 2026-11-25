@@ -13,6 +13,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import './App.css'
 
 import PlaceForm from './components/PlaceForm'
+import { duplicateConfirmationKey, findPossibleDuplicates, isSimilarPlaceName } from './services/placeDuplicates'
 import { places } from './data/places'
 import type { Place, PlaceCategory } from './types/place'
 
@@ -55,36 +56,6 @@ const statusLabels = {
     vorgemerkt: 'Vorgemerkt',
     empfohlen: 'Empfohlen',
     nicht_empfohlen: 'Nicht empfohlen'
-}
-
-
-function normalizePlaceName(name: string): string {
-    return name
-        .toLocaleLowerCase('de-DE')
-        .normalize('NFKD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/ß/g, 'ss')
-        .replace(/[^a-z0-9]/g, '')
-}
-
-function isSimilarPlaceName(
-    googleName: string,
-    osmName: string
-): boolean {
-    const google = normalizePlaceName(googleName)
-    const osm = normalizePlaceName(osmName)
-
-    if (!google || !osm) return false
-
-    // Namen stimmen vollständig überein
-    if (google === osm) return true
-
-    // Ein Name enthält den anderen
-    if (google.length >= 8 && osm.length >= 8) {
-        return google.includes(osm) || osm.includes(google)
-    }
-
-    return false
 }
 
 
@@ -456,13 +427,10 @@ function App() {
         }
     }, [allPlaces])
 
-    // Neuen Ort hinzufügen
-    const handleAddPlace = (newPlace: Place) => {
-        setAllPlaces(previousPlaces => [
-            ...previousPlaces,
-            newPlace
-        ])
+    const [newPlaceVersion, setNewPlaceVersion] = useState(0)
 
+    // Neue Eintragung vollständig beenden, ohne gespeicherte Orte zu verändern.
+    const resetNewPlace = () => {
         // Auswahlmarker entfernen
         selectionMarkerRef.current?.remove()
         selectionMarkerRef.current = null
@@ -480,6 +448,42 @@ function App() {
         setOsmLoading(false)
         setOsmSearched(false)
 
+        setGoogleInput('')
+        setGoogleMessage('')
+        setOsmNameFilter('')
+        setOsmCategoryFilter('all')
+        setNewPlaceVersion(version => version + 1)
+    }
+
+    const editExistingPlace = (place: Place) => {
+        resetNewPlace()
+        setEditingPlace(place)
+        mapRef.current?.flyTo({ center: [place.longitude, place.latitude], zoom: 14 })
+    }
+
+    // Neuen Ort hinzufügen
+    const handleAddPlace = (newPlace: Place, confirmedDuplicateKey?: string): boolean => {
+        const duplicates = findPossibleDuplicates(newPlace, allPlaces)
+
+        if (duplicates.length > 0 && confirmedDuplicateKey !== duplicateConfirmationKey(newPlace, duplicates)) {
+            const existingNames = duplicates.map(place => `„${place.name}“`).join(', ')
+            const confirmed = window.confirm(
+                `Dieser Ort könnte bereits in deiner Sammlung vorhanden sein.\n\n`
+                + `Vorhandene Orte: ${existingNames}\n\n`
+                + 'Trotzdem hinzufügen? Mit OK hinzufügen oder mit Abbrechen zurück zum Formular.'
+            )
+
+            // Vor jeder Zustandsänderung abbrechen, damit auch die Auswahl erhalten bleibt.
+            if (!confirmed) return false
+        }
+
+        setAllPlaces(previousPlaces => [
+            ...previousPlaces,
+            newPlace
+        ])
+
+        resetNewPlace()
+
         // Karte auf den neuen Ort zentrieren
         mapRef.current?.flyTo({
             center: [
@@ -488,6 +492,8 @@ function App() {
             ],
             zoom: 14
         })
+
+        return true
     }
 
     // Bestehenden Ort aktualisieren
@@ -834,7 +840,7 @@ function App() {
                     editingPlace?.id ??
                     selectedOsmPlace?.osmId ??
                     googleMapsSuggestion ??
-                    'new'
+                    `new-${newPlaceVersion}`
                 }
                 selectedLocation={selectedLocation}
                 editingPlace={editingPlace}
@@ -844,6 +850,9 @@ function App() {
 
                 osmEnrichment={osmEnrichment}
 
+                allPlaces={allPlaces}
+                onEditExisting={editExistingPlace}
+                onCancelNew={resetNewPlace}
                 onAddPlace={handleAddPlace}
                 onUpdatePlace={handleUpdatePlace}
                 onCancelEdit={() => setEditingPlace(null)}

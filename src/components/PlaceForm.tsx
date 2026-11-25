@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
+import { duplicateConfirmationKey, findPossibleDuplicates } from '../services/placeDuplicates'
 import NeighborhoodInput from './NeighborhoodInput'
 import type { OsmPlace } from '../services/osm'
 import {
@@ -25,7 +26,10 @@ interface PlaceFormProps {
     editingPlace: Place | null
     osmSuggestion: OsmPlace | null
     osmEnrichment: OsmPlace | null
-    onAddPlace: (place: Place) => void
+    allPlaces: Place[]
+    onEditExisting: (place: Place) => void
+    onCancelNew: () => void
+    onAddPlace: (place: Place, confirmedDuplicateKey?: string) => boolean
     onUpdatePlace: (place: Place) => void
     onCancelEdit: () => void
     googleMapsSuggestion: string | null
@@ -37,6 +41,9 @@ function PlaceForm({
                        editingPlace,
                        osmSuggestion,
                        osmEnrichment,
+                       allPlaces,
+                       onEditExisting,
+                       onCancelNew,
                        onAddPlace,
                        onUpdatePlace,
                        onCancelEdit,
@@ -184,6 +191,33 @@ function PlaceForm({
             : selectedLocation
 
 
+    const [settledName, setSettledName] = useState(name)
+    const [confirmedDuplicateKey, setConfirmedDuplicateKey] = useState<string>()
+
+    // Importierte Namen sind sofort verfügbar; beim Tippen kurz warten.
+    useEffect(() => {
+        const timeout = window.setTimeout(() => setSettledName(name), 500)
+        return () => window.clearTimeout(timeout)
+    }, [name])
+
+    const candidate = formLocation ? {
+        ...formLocation,
+        name: name.trim(),
+        googleMapsUrl: googleMapsUrl.trim() || undefined
+    } : null
+    const duplicates = !editingPlace && candidate && name.trim() && settledName === name
+        ? findPossibleDuplicates(candidate, allPlaces)
+        : []
+    const currentDuplicateKey = candidate ? duplicateConfirmationKey(candidate, duplicates) : ''
+    const showDuplicates = duplicates.length > 0 && confirmedDuplicateKey !== currentDuplicateKey
+
+    const editDuplicate = (place: Place) => {
+        if (!window.confirm(
+            'Vorhandenen Eintrag bearbeiten? Deine Eingaben für den neuen Ort werden dabei verworfen.'
+        )) return
+        onEditExisting(place)
+    }
+
     // Formular speichern
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -241,11 +275,12 @@ function PlaceForm({
         // Unterscheiden zwischen Bearbeiten und Hinzufügen
         if (editingPlace) {
             onUpdatePlace(placeData)
-        } else {
-            onAddPlace(placeData)
+        } else if (!onAddPlace(placeData, confirmedDuplicateKey)) {
+            // Abgebrochen: sämtliche Eingaben unverändert lassen.
+            return
         }
 
-        // Formular zurücksetzen
+        // Formular nur nach erfolgreichem Hinzufügen oder Bearbeiten zurücksetzen
         setName('')
         setCategory('restaurant')
         setCuisine('')
@@ -286,6 +321,30 @@ function PlaceForm({
                 onSubmit={handleSubmit}
             >
 
+                {showDuplicates && (
+                    <section className="duplicate-notice" aria-label="Mögliche Dubletten">
+                        <p role="status"><strong>Dieser Ort könnte bereits gespeichert sein.</strong></p>
+                        {duplicates.map(place => (
+                            <div key={place.id} className="duplicate-match">
+                                <p><strong>{place.name}</strong> · {place.neighborhood ?? place.district}</p>
+                                <p>Status: {{
+                                    unentdeckt: 'Unentdeckt', vorgemerkt: 'Vorgemerkt',
+                                    empfohlen: 'Empfohlen', nicht_empfohlen: 'Nicht empfohlen'
+                                }[place.status]}</p>
+                                <button type="button" onClick={() => editDuplicate(place)}>
+                                    Vorhandenen Eintrag bearbeiten
+                                </button>
+                            </div>
+                        ))}
+                        <div className="duplicate-actions">
+                            <button type="button" onClick={() => setConfirmedDuplicateKey(currentDuplicateKey)}>
+                                Als neuen Ort fortfahren
+                            </button>
+                            <button type="button" onClick={onCancelNew}>Abbrechen</button>
+                        </div>
+                    </section>
+                )}
+
                 {/* Allgemeine Informationen */}
 
                 <div className="form-grid">
@@ -295,7 +354,7 @@ function PlaceForm({
                         <input
                             type="text"
                             value={name}
-                            onChange={e => setName(e.target.value)}
+                            onChange={e => { setName(e.target.value); setConfirmedDuplicateKey(undefined) }}
                             placeholder="z. B. Kebapci Hamdi Baba"
                             required
                         />
@@ -433,9 +492,10 @@ function PlaceForm({
                         <input
                             type="url"
                             value={googleMapsUrl}
-                            onChange={e =>
+                            onChange={e => {
                                 setGoogleMapsUrl(e.target.value)
-                            }
+                                setConfirmedDuplicateKey(undefined)
+                            }}
                             placeholder="https://www.google.com/maps/..."
                         />
                     </label>
