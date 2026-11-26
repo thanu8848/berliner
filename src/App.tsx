@@ -1,3 +1,8 @@
+import { bindMapLanguage } from './services/mapLanguage'
+import { categoryLabels, statusLabels } from './data/placeLabels'
+import { useTranslation } from 'react-i18next'
+import i18n from './i18n'
+import LanguageSwitcher from './components/LanguageSwitcher'
 
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -41,30 +46,13 @@ const statusColors = {
     nicht_empfohlen: '#C45B58'
 }
 
-// Beschriftungen der Kategorien
-const categoryLabels = {
-    restaurant: 'Restaurant',
-    imbiss: 'Imbiss',
-    cafe: 'Café',
-    bar: 'Bar',
-    kneipe: 'Kneipe'
-}
-
-// Beschriftungen der Entdeckerstatus
-const statusLabels = {
-    unentdeckt: 'Unentdeckt',
-    vorgemerkt: 'Vorgemerkt',
-    empfohlen: 'Empfohlen',
-    nicht_empfohlen: 'Nicht empfohlen'
-}
-
-
 // Informationsfenster für einen gespeicherten Ort
 function createPlacePopup(
     place: Place,
     onEdit: (place: Place) => void,
     onDelete: (place: Place) => void
 ) {
+    const t = i18n.t.bind(i18n)
     const content = document.createElement('div')
 
     // Name
@@ -74,12 +62,12 @@ function createPlacePopup(
     // Kategorie und Bezirk
     const category = document.createElement('p')
     category.textContent =
-        `${categoryLabels[place.category]} · ${place.neighborhood ?? place.district}`
+        `${t(categoryLabels[place.category])} · ${place.neighborhood ?? place.district}`
 
     // Entdeckerstatus
     const status = document.createElement('p')
     status.textContent =
-        `Status: ${statusLabels[place.status]}`
+        t('Status: {{status}}', { status: t(statusLabels[place.status]) })
 
     content.append(title, category, status)
 
@@ -87,7 +75,7 @@ function createPlacePopup(
     if (place.cuisine && place.cuisine.length > 0) {
         const cuisine = document.createElement('p')
         cuisine.textContent =
-            `Küche: ${place.cuisine.join(', ')}`
+            t('Küche: {{cuisine}}', { cuisine: place.cuisine.join(', ') })
 
         content.append(cuisine)
     }
@@ -97,13 +85,13 @@ function createPlacePopup(
         const seating = document.createElement('p')
 
         const seatingLabels = {
-            yes: 'Ja',
-            no: 'Nein',
-            unknown: 'Unbekannt'
+            yes: t("Ja"),
+            no: t("Nein"),
+            unknown: t("Unbekannt")
         }
 
         seating.textContent =
-            `Sitzplätze: ${seatingLabels[place.seating.available]}`
+            t('Sitzplätze: {{seating}}', { seating: seatingLabels[place.seating.available] })
 
         content.append(seating)
 
@@ -111,27 +99,27 @@ function createPlacePopup(
             const details: string[] = []
 
             if (place.seating.capacity === 'few') {
-                details.push('Wenige Sitzplätze')
+                details.push(t("Wenige Sitzplätze"))
             }
 
             if (place.seating.capacity === 'many') {
-                details.push('Viele Sitzplätze')
+                details.push(t("Viele Sitzplätze"))
             }
 
             if (place.seating.indoor) {
-                details.push('Drinnen')
+                details.push(t("Drinnen"))
             }
 
             if (place.seating.outdoor) {
-                details.push('Draußen')
+                details.push(t("Draußen"))
             }
 
             if (place.seating.cozy) {
-                details.push('Gemütlich')
+                details.push(t("Gemütlich"))
             }
 
             if (place.seating.cramped) {
-                details.push('Eng')
+                details.push(t("Eng"))
             }
 
             if (details.length > 0) {
@@ -155,7 +143,7 @@ function createPlacePopup(
         website.href = place.website
         website.target = '_blank'
         website.rel = 'noopener noreferrer'
-        website.textContent = 'Website öffnen'
+        website.textContent = t("Website öffnen")
 
         const websiteContainer = document.createElement('p')
         websiteContainer.append(website)
@@ -174,7 +162,7 @@ function createPlacePopup(
 
     navigation.target = '_blank'
     navigation.rel = 'noopener noreferrer'
-    navigation.textContent = 'Route in Google Maps öffnen'
+    navigation.textContent = t("Route in Google Maps öffnen")
 
     const navigationContainer = document.createElement('p')
     navigationContainer.append(navigation)
@@ -187,7 +175,7 @@ function createPlacePopup(
 
     const editButton = document.createElement('button')
     editButton.type = 'button'
-    editButton.textContent = 'Bearbeiten'
+    editButton.textContent = t("Bearbeiten")
 
     editButton.addEventListener('click', (event) => {
         event.stopPropagation()
@@ -196,7 +184,7 @@ function createPlacePopup(
 
     const deleteButton = document.createElement('button')
     deleteButton.type = 'button'
-    deleteButton.textContent = 'Löschen'
+    deleteButton.textContent = t("Löschen")
 
     deleteButton.addEventListener('click', (event) => {
         event.stopPropagation()
@@ -210,6 +198,7 @@ function createPlacePopup(
 }
 
 function App() {
+    const { t } = useTranslation()
     // Referenzen für Karte und Marker
     const mapContainer = useRef<HTMLDivElement | null>(null)
     const mapRef = useRef<Map | null>(null)
@@ -303,6 +292,7 @@ function App() {
             zoom: 11
         })
 
+        const unbindMapLanguage = bindMapLanguage(map.getContainer())
         mapRef.current = map
 
         // Zoomsteuerung
@@ -352,6 +342,7 @@ function App() {
             selectionMarkerRef.current = null
 
             mapRef.current = null
+            unbindMapLanguage()
             map.remove()
         }
     }, [])
@@ -362,17 +353,9 @@ function App() {
 
         if (!map) return
 
+        const refreshPopups: Array<() => void> = []
         const markers = allPlaces.map((place) => {
-            return new Marker({
-                color: statusColors[place.status]
-            })
-                .setLngLat([
-                    place.longitude,
-                    place.latitude
-                ])
-                .setPopup(
-                    new Popup({ offset: 25 }).setDOMContent(
-                        createPlacePopup(
+            const renderPopup = () => createPlacePopup(
                             place,
 
                             // Vorhandenen Ort bearbeiten
@@ -398,7 +381,7 @@ function App() {
                             // Vorhandenen Ort löschen
                             (placeToDelete) => {
                                 const confirmed = window.confirm(
-                                    `Möchtest du "${placeToDelete.name}" wirklich löschen?`
+                                    i18n.t('Möchtest du „{{name}}“ wirklich löschen?', { name: placeToDelete.name })
                                 )
 
                                 if (!confirmed) return
@@ -416,13 +399,26 @@ function App() {
                                 )
                             }
                         )
-                    )
+            const marker = new Marker({
+                color: statusColors[place.status]
+            })
+                .setLngLat([
+                    place.longitude,
+                    place.latitude
+                ])
+                .setPopup(
+                    new Popup({ offset: 25 }).setDOMContent(renderPopup())
                 )
                 .addTo(map)
+            refreshPopups.push(() => marker.getPopup()?.setDOMContent(renderPopup()))
+            return marker
         })
+        const refresh = () => refreshPopups.forEach(update => update())
+        i18n.on('languageChanged', refresh)
 
         // Alte Marker bei Änderungen entfernen
         return () => {
+            i18n.off('languageChanged', refresh)
             markers.forEach(marker => marker.remove())
         }
     }, [allPlaces])
@@ -468,9 +464,7 @@ function App() {
         if (duplicates.length > 0 && confirmedDuplicateKey !== duplicateConfirmationKey(newPlace, duplicates)) {
             const existingNames = duplicates.map(place => `„${place.name}“`).join(', ')
             const confirmed = window.confirm(
-                `Dieser Ort könnte bereits in deiner Sammlung vorhanden sein.\n\n`
-                + `Vorhandene Orte: ${existingNames}\n\n`
-                + 'Trotzdem hinzufügen? Mit OK hinzufügen oder mit Abbrechen zurück zum Formular.'
+                t("Dieser Ort könnte bereits in deiner Sammlung vorhanden sein.\n\nVorhandene Orte: {{names}}\n\nTrotzdem hinzufügen? Mit OK hinzufügen oder mit Abbrechen zurück zum Formular.", { names: existingNames })
             )
 
             // Vor jeder Zustandsänderung abbrechen, damit auch die Auswahl erhalten bleibt.
@@ -549,14 +543,7 @@ function App() {
 
             console.error('OSM-Suche fehlgeschlagen:', error)
 
-            const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : 'Unbekannter Fehler'
-
-            setOsmError(
-                `OSM-Suche fehlgeschlagen: ${errorMessage}`
-            )
+            setOsmError('Die OSM-Suche ist fehlgeschlagen. Bitte versuche es erneut.')
 
 
 
@@ -663,16 +650,14 @@ function App() {
 
         if (result.kind === 'short') {
             setGoogleMessage(
-                'Das ist ein verkürzter Link. Öffne ihn im Browser, ' +
-                'kopiere die vollständige Adresse und füge sie hier ein.'
+                "Das ist ein verkürzter Link. Öffne ihn im Browser, kopiere die vollständige Adresse und füge sie hier ein."
             )
             return
         }
 
         if (result.kind === 'no_coordinates') {
             setGoogleMessage(
-                'Der Link enthält keine eindeutig erkennbaren ' +
-                'Zielkoordinaten. Bitte überprüfe den Ort manuell.'
+                "Der Link enthält keine eindeutig erkennbaren Zielkoordinaten. Bitte überprüfe den Ort manuell."
             )
             return
         }
@@ -730,13 +715,9 @@ function App() {
 
         // Hinweis für die Benutzeroberfläche
 
-        setGoogleMessage(
-            placeName
-                ? `Ort erkannt: ${placeName}. ` +
-                'Bitte überprüfe den Marker und ergänze die Angaben im Formular.'
-                : 'Koordinaten erkannt. Bitte trage den Namen im Formular ein ' +
-                'oder suche bei Bedarf nach OSM-Orten in der Nähe.'
-        )
+        setGoogleMessage(placeName
+            ? 'Ort erkannt: {{name}}. Bitte überprüfe den Marker und ergänze die Angaben im Formular.'
+            : 'Koordinaten erkannt. Bitte trage den Namen im Formular ein oder suche bei Bedarf nach OSM-Orten in der Nähe.')
 
 
 
@@ -761,7 +742,7 @@ function App() {
                 <strong>{place.name}</strong>
 
                 <span>
-        {categoryLabels[place.category]}
+        {t(categoryLabels[place.category])}
 
                     {place.cuisine.length > 0 &&
                         ` · ${place.cuisine.join(', ')}`}
@@ -781,8 +762,8 @@ function App() {
                     }}
                 >
                     {isGoogleMatch
-                        ? 'Fehlende Angaben ergänzen'
-                        : 'Ort übernehmen'}
+                        ? t("Fehlende Angaben ergänzen")
+                        : t("Ort übernehmen")}
                 </button>
             </div>
         )
@@ -796,16 +777,17 @@ function App() {
 
             {/* Kopfbereich */}
             <header className="app-header">
-                <h1>Berlin entdecken</h1>
-                <p>Unsere gemeinsame Entdeckerkarte</p>
+                <LanguageSwitcher />
+                <h1>Berliner</h1>
+                <p>{t("Unsere gemeinsame Entdeckerkarte")}</p>
             </header>
 
 
             <section className="google-import">
-                <h2>Ort aus Google Maps übernehmen</h2>
+                <h2>{t("Ort aus Google Maps übernehmen")}</h2>
 
                 <label htmlFor="google-maps-input">
-                    Google-Maps-Link
+                    {t("Google-Maps-Link")}
                 </label>
 
                 <div className="google-import-controls">
@@ -824,12 +806,12 @@ function App() {
                         onClick={handleGoogleMapsImport}
                         disabled={!googleInput.trim()}
                     >
-                        Link prüfen
+                        {t("Link prüfen")}
                     </button>
                 </div>
 
                 {googleMessage && (
-                    <p>{googleMessage}</p>
+                    <p>{t(googleMessage, { name: googlePlaceName })}</p>
                 )}
             </section>
 
@@ -861,11 +843,11 @@ function App() {
             {/* Ausgewählte Koordinaten anzeigen */}
             {selectedLocation && !editingPlace && (
                 <div className="location-info">
-                    <strong>Ausgewählter Standort:</strong>
+                    <strong>{t("Ausgewählter Standort:")}</strong>
                     <span>
-            Breitengrad: {selectedLocation.latitude.toFixed(6)}
+            {t("Breitengrad:")} {selectedLocation.latitude.toFixed(6)}
                         {' · '}
-                        Längengrad: {selectedLocation.longitude.toFixed(6)}
+                        {t("Längengrad:")} {selectedLocation.longitude.toFixed(6)}
           </span>
                 </div>
             )}
@@ -881,17 +863,17 @@ function App() {
                     >
 
                         {osmLoading
-                            ? 'Suche läuft ...'
+                            ? t("Suche läuft ...")
                             : googleMapsSuggestion
-                                ? 'Weitere Informationen aus OSM suchen'
-                                : 'OSM-Orte in der Nähe suchen'}
+                                ? t("Weitere Informationen aus OSM suchen")
+                                : t("OSM-Orte in der Nähe suchen")}
 
                     </button>
 
                     {/* Fehler anzeigen */}
                     {osmError && (
                         <p className="osm-error">
-                            {osmError}
+                            {t(osmError)}
                         </p>
                     )}
 
@@ -903,7 +885,7 @@ function App() {
                             <div className="osm-filters">
 
                                 <label>
-                                    Kategorie
+                                    {t("Kategorie")}
                                     <select
                                         value={osmCategoryFilter}
                                         onChange={e =>
@@ -912,22 +894,22 @@ function App() {
                                             )
                                         }
                                     >
-                                        <option value="all">Alle Orte</option>
-                                        <option value="restaurant">Restaurants</option>
-                                        <option value="imbiss">Imbisse</option>
-                                        <option value="cafe">Cafés</option>
-                                        <option value="bar">Bars</option>
-                                        <option value="kneipe">Kneipen</option>
+                                        <option value="all">{t("Alle Orte")}</option>
+                                        <option value="restaurant">{t("Restaurants")}</option>
+                                        <option value="imbiss">{t("Imbisse")}</option>
+                                        <option value="cafe">{t("Cafés")}</option>
+                                        <option value="bar">{t("Bars")}</option>
+                                        <option value="kneipe">{t("Kneipen")}</option>
                                     </select>
                                 </label>
 
                                 <label>
-                                    Nach Namen filtern
+                                    {t("Nach Namen filtern")}
                                     <input
                                         type="search"
                                         value={osmNameFilter}
                                         onChange={e => setOsmNameFilter(e.target.value)}
-                                        placeholder="z. B. Café ..."
+                                        placeholder={t("z. B. Café ...")}
                                     />
                                 </label>
                             </div>
@@ -936,8 +918,7 @@ function App() {
 
                             <div className="osm-results">
                                 <h3>
-                                    {filteredOsmResults.length} von {osmResults.length}
-                                    {' '}Orten angezeigt
+                                    {t('{{shown}} von {{total}} Orten angezeigt', { shown: filteredOsmResults.length, total: osmResults.length })}
                                 </h3>
 
                                 {/* Mögliche Treffer zum Google-Maps-Ort */}
@@ -945,14 +926,11 @@ function App() {
                                     <div className="osm-match-info">
                                         {matchingOsmResults.length > 0 ? (
                                             <p>
-                                                Mögliche passende OSM-Einträge für
-                                                {' '}<strong>{googlePlaceName}</strong>:
+                                                {t('Mögliche passende OSM-Einträge für {{name}}:', { name: googlePlaceName })}
                                             </p>
                                         ) : (
                                             <p>
-                                                Kein eindeutiger Namens-Treffer für
-                                                {' '}<strong>{googlePlaceName}</strong> gefunden.
-                                                Du kannst den Ort trotzdem manuell speichern.
+                                                {t('Kein eindeutiger Namens-Treffer für {{name}} gefunden. Du kannst den Ort trotzdem manuell speichern.', { name: googlePlaceName })}
                                             </p>
                                         )}
                                     </div>
@@ -966,7 +944,7 @@ function App() {
                                     googlePlaceName ? (
                                         <details className="osm-other-results">
                                             <summary>
-                                                Weitere Orte in der Umgebung anzeigen
+                                                {t("Weitere Orte in der Umgebung anzeigen")}
                                                 {' '}({otherOsmResults.length})
                                             </summary>
 
@@ -979,7 +957,7 @@ function App() {
 
                                 {filteredOsmResults.length === 0 && (
                                     <p>
-                                        Für diese Filter wurden keine passenden Orte gefunden.
+                                        {t("Für diese Filter wurden keine passenden Orte gefunden.")}
                                     </p>
                                 )}
                             </div>
@@ -994,8 +972,7 @@ function App() {
                         osmResults.length === 0 &&
                         !osmError && (
                             <p>
-                                Im Umkreis von 100 Metern wurden
-                                keine passenden Orte gefunden.
+                                {t("Im Umkreis von 100 Metern wurden keine passenden Orte gefunden.")}
                             </p>
                         )}
                 </section>

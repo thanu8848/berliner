@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "i18next": "^27.2.9",
     "maplibre-gl": "^6.19.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "react-i18next": "^18.0.3"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

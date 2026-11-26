@@ -1,3 +1,6 @@
+import { categoryLabels, statusLabels } from '../data/placeLabels'
+import { translateValidation, clearValidation } from '../i18n'
+import { useTranslation } from 'react-i18next'
 
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
@@ -50,6 +53,7 @@ function PlaceForm({
                        googleMapsSuggestion,
                        googlePlaceName
                    }: PlaceFormProps) {
+    const { t } = useTranslation()
 
     // Eingabefelder mit vorhandenen Daten initialisieren
     const [name, setName] = useState(
@@ -213,7 +217,7 @@ function PlaceForm({
 
     const editDuplicate = (place: Place) => {
         if (!window.confirm(
-            'Vorhandenen Eintrag bearbeiten? Deine Eingaben für den neuen Ort werden dabei verworfen.'
+            t("Vorhandenen Eintrag bearbeiten? Deine Eingaben für den neuen Ort werden dabei verworfen.")
         )) return
         onEditExisting(place)
     }
@@ -309,38 +313,37 @@ function PlaceForm({
 
             <summary>
                 {editingPlace
-                    ? `Ort bearbeiten: ${editingPlace.name}`
+                    ? t('Ort bearbeiten: {{name}}', { name: editingPlace.name })
                     : osmSuggestion
-                        ? `OSM-Ort übernehmen: ${osmSuggestion.name}`
-                        : '+ Neuen Ort hinzufügen'}
+                        ? t('OSM-Ort übernehmen: {{name}}', { name: osmSuggestion.name })
+                        : t("+ Neuen Ort hinzufügen")}
             </summary>
 
 
             <form
                 className="place-form-content"
                 onSubmit={handleSubmit}
+                onInvalidCapture={translateValidation}
+                onInputCapture={clearValidation}
             >
 
                 {showDuplicates && (
-                    <section className="duplicate-notice" aria-label="Mögliche Dubletten">
-                        <p role="status"><strong>Dieser Ort könnte bereits gespeichert sein.</strong></p>
+                    <section className="duplicate-notice" aria-label={t("Mögliche Dubletten")}>
+                        <p role="status"><strong>{t("Dieser Ort könnte bereits gespeichert sein.")}</strong></p>
                         {duplicates.map(place => (
                             <div key={place.id} className="duplicate-match">
                                 <p><strong>{place.name}</strong> · {place.neighborhood ?? place.district}</p>
-                                <p>Status: {{
-                                    unentdeckt: 'Unentdeckt', vorgemerkt: 'Vorgemerkt',
-                                    empfohlen: 'Empfohlen', nicht_empfohlen: 'Nicht empfohlen'
-                                }[place.status]}</p>
+                                <p>{t('Status: {{status}}', { status: t(statusLabels[place.status]) })}</p>
                                 <button type="button" onClick={() => editDuplicate(place)}>
-                                    Vorhandenen Eintrag bearbeiten
+                                    {t("Vorhandenen Eintrag bearbeiten")}
                                 </button>
                             </div>
                         ))}
                         <div className="duplicate-actions">
                             <button type="button" onClick={() => setConfirmedDuplicateKey(currentDuplicateKey)}>
-                                Als neuen Ort fortfahren
+                                {t("Als neuen Ort fortfahren")}
                             </button>
-                            <button type="button" onClick={onCancelNew}>Abbrechen</button>
+                            <button type="button" onClick={onCancelNew}>{t("Abbrechen")}</button>
                         </div>
                     </section>
                 )}
@@ -350,18 +353,18 @@ function PlaceForm({
                 <div className="form-grid">
 
                     <label>
-                        Name des Ortes
+                        {t("Name des Ortes")}
                         <input
                             type="text"
                             value={name}
                             onChange={e => { setName(e.target.value); setConfirmedDuplicateKey(undefined) }}
-                            placeholder="z. B. Kebapci Hamdi Baba"
+                            placeholder={t("z. B. Kebapci Hamdi Baba")}
                             required
                         />
                     </label>
 
                     <label>
-                        Kategorie
+                        {t("Kategorie")}
                         <select
                             value={category}
                             onChange={e => {
@@ -369,21 +372,21 @@ function PlaceForm({
                                 setCategory(e.target.value as PlaceCategory)
                             }}
                         >
-                            <option value="restaurant">Restaurant</option>
-                            <option value="imbiss">Imbiss</option>
-                            <option value="cafe">Café</option>
-                            <option value="bar">Bar</option>
-                            <option value="kneipe">Kneipe</option>
+                            <option value="restaurant">{t("Restaurant")}</option>
+                            <option value="imbiss">{t("Imbiss")}</option>
+                            <option value="cafe">{t("Café")}</option>
+                            <option value="bar">{t("Bar")}</option>
+                            <option value="kneipe">{t("Kneipe")}</option>
                         </select>
                     </label>
 
                     <label>
-                        Küche / Angebot
+                        {t("Küche / Angebot")}
                         <input
                             type="text"
                             value={cuisine}
                             onChange={e => setCuisine(e.target.value)}
-                            placeholder="z. B. Döner, Vietnamesisch"
+                            placeholder={t("z. B. Döner, Vietnamesisch")}
                         />
                     </label>
 
@@ -396,19 +399,19 @@ function PlaceForm({
 
                 {/* Sitzmöglichkeiten */}
 
-                <h3>Sitzmöglichkeiten</h3>
+                <h3>{t("Sitzmöglichkeiten")}</h3>
 
                 <label>
-                    Sitzplätze vorhanden?
+                    {t("Sitzplätze vorhanden?")}
                     <select
                         value={seating}
                         onChange={e =>
                             setSeating(e.target.value as Seating)
                         }
                     >
-                        <option value="unknown">Unbekannt</option>
-                        <option value="yes">Ja</option>
-                        <option value="no">Nein</option>
+                        <option value="unknown">{t("Unbekannt")}</option>
+                        <option value="yes">{t("Ja")}</option>
+                        <option value="no">{t("Nein")}</option>
                     </select>
                 </label>
 
@@ -416,7 +419,7 @@ function PlaceForm({
                     <div className="seating-details">
 
                         <label>
-                            Anzahl der Sitzplätze
+                            {t("Anzahl der Sitzplätze")}
                             <select
                                 value={capacity}
                                 onChange={e =>
@@ -425,9 +428,9 @@ function PlaceForm({
                                     )
                                 }
                             >
-                                <option value="unknown">Unbekannt</option>
-                                <option value="few">Wenige</option>
-                                <option value="many">Viele</option>
+                                <option value="unknown">{t("Unbekannt")}</option>
+                                <option value="few">{t("Wenige")}</option>
+                                <option value="many">{t("Viele")}</option>
                             </select>
                         </label>
 
@@ -441,7 +444,7 @@ function PlaceForm({
                                         setIndoor(e.target.checked)
                                     }
                                 />
-                                Drinnen
+                                {t("Drinnen")}
                             </label>
 
                             <label>
@@ -452,7 +455,7 @@ function PlaceForm({
                                         setOutdoor(e.target.checked)
                                     }
                                 />
-                                Draußen
+                                {t("Draußen")}
                             </label>
 
                             <label>
@@ -463,7 +466,7 @@ function PlaceForm({
                                         setCozy(e.target.checked)
                                     }
                                 />
-                                Gemütlich
+                                {t("Gemütlich")}
                             </label>
 
                             <label>
@@ -474,7 +477,7 @@ function PlaceForm({
                                         setCramped(e.target.checked)
                                     }
                                 />
-                                Eng
+                                {t("Eng")}
                             </label>
 
                         </div>
@@ -483,12 +486,12 @@ function PlaceForm({
 
                 {/* Weitere Informationen */}
 
-                <h3>Weitere Informationen</h3>
+                <h3>{t("Weitere Informationen")}</h3>
 
                 <div className="form-grid">
 
                     <label>
-                        Google-Maps-Link (optional)
+                        {t("Google-Maps-Link (optional)")}
                         <input
                             type="url"
                             value={googleMapsUrl}
@@ -501,7 +504,7 @@ function PlaceForm({
                     </label>
 
                     <label>
-                        Website (optional)
+                        {t("Website (optional)")}
                         <input
                             type="url"
                             value={website}
@@ -513,7 +516,7 @@ function PlaceForm({
                     </label>
 
                     <label>
-                        Entdeckerstatus
+                        {t("Entdeckerstatus")}
                         <select
                             value={status}
                             onChange={e =>
@@ -521,16 +524,16 @@ function PlaceForm({
                             }
                         >
                             <option value="unentdeckt">
-                                Unentdeckt
+                                {t("Unentdeckt")}
                             </option>
                             <option value="vorgemerkt">
-                                Vorgemerkt
+                                {t("Vorgemerkt")}
                             </option>
                             <option value="empfohlen">
-                                Empfohlen
+                                {t("Empfohlen")}
                             </option>
                             <option value="nicht_empfohlen">
-                                Nicht empfohlen
+                                {t("Nicht empfohlen")}
                             </option>
                         </select>
                     </label>
@@ -538,11 +541,11 @@ function PlaceForm({
                 </div>
 
                 <label className="notes-field">
-                    Unsere Notizen
+                    {t("Unsere Notizen")}
                     <textarea
                         value={notes}
                         onChange={e => setNotes(e.target.value)}
-                        placeholder="Wie war der Ort? Was hat uns gefallen oder nicht gefallen?"
+                        placeholder={t("Wie war der Ort? Was hat uns gefallen oder nicht gefallen?")}
                         rows={4}
                     />
                 </label>
@@ -553,46 +556,46 @@ function PlaceForm({
 
                     <strong>
                         {editingPlace
-                            ? 'Vorschau der Änderungen'
-                            : 'Vorschau des neuen Ortes'}
+                            ? t("Vorschau der Änderungen")
+                            : t("Vorschau des neuen Ortes")}
                     </strong>
 
                     <p>
-                        {name || 'Neuer Ort'} ·
-                        {' '}{cuisine || category} ·
-                        {' '}{getDistrictForNeighborhood(neighborhood) ? neighborhood : 'Kein Ortsteil'}
+                        {name || t("Neuer Ort")} ·
+                        {' '}{cuisine || t(categoryLabels[category])} ·
+                        {' '}{getDistrictForNeighborhood(neighborhood) ? neighborhood : t("Kein Ortsteil")}
                     </p>
 
-                    <p>Status: {status}</p>
+                    <p>{t('Status: {{status}}', { status: t(statusLabels[status]) })}</p>
 
                     <p>
-                        Sitzplätze: {
-                        seating === 'yes' ? 'Ja' :
-                            seating === 'no' ? 'Nein' : 'Unbekannt'
+                        {t("Sitzplätze:")} {
+                        seating === 'yes' ? t("Ja") :
+                            seating === 'no' ? t("Nein") : t("Unbekannt")
                     }
 
                         {seating === 'yes' &&
                             ` · ${
-                                capacity === 'few' ? 'Wenige' :
-                                    capacity === 'many' ? 'Viele' :
-                                        'Anzahl unbekannt'
+                                capacity === 'few' ? t("Wenige") :
+                                    capacity === 'many' ? t("Viele") :
+                                        t("Anzahl unbekannt")
                             }`}
                     </p>
 
                     {seating === 'yes' && (
                         <p>
                             {[
-                                indoor && 'Drinnen',
-                                outdoor && 'Draußen',
-                                cozy && 'Gemütlich',
-                                cramped && 'Eng'
+                                indoor && t("Drinnen"),
+                                outdoor && t("Draußen"),
+                                cozy && t("Gemütlich"),
+                                cramped && t("Eng")
                             ].filter(Boolean).join(' · ')}
                         </p>
                     )}
 
                     {notes.trim() && (
                         <p>
-                            Notiz: {notes}
+                            {t("Notiz:")} {notes}
                         </p>
                     )}
 
@@ -603,13 +606,13 @@ function PlaceForm({
                 <div className="form-location">
                     {formLocation ? (
                         <p>
-                            Standort:
+                            {t("Standort:")}
                             {' '}{formLocation.latitude.toFixed(6)},
                             {' '}{formLocation.longitude.toFixed(6)}
                         </p>
                     ) : (
                         <p>
-                            Bitte zuerst einen Standort auf der Karte auswählen.
+                            {t("Bitte zuerst einen Standort auf der Karte auswählen.")}
                         </p>
                     )}
                 </div>
@@ -622,8 +625,8 @@ function PlaceForm({
                     disabled={!formLocation || !name.trim() || !getDistrictForNeighborhood(neighborhood)}
                 >
                     {editingPlace
-                        ? 'Änderungen speichern'
-                        : 'Ort hinzufügen'}
+                        ? t("Änderungen speichern")
+                        : t("Ort hinzufügen")}
                 </button>
 
                 {/* Bearbeitung abbrechen */}
@@ -634,7 +637,7 @@ function PlaceForm({
                         className="cancel-edit-button"
                         onClick={onCancelEdit}
                     >
-                        Bearbeitung abbrechen
+                        {t("Bearbeitung abbrechen")}
                     </button>
                 )}
 

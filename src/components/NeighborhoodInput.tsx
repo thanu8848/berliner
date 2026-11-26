@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useId, useState } from 'react'
 import { getDistrictForNeighborhood } from '../data/berlinOrtsteile'
 import { suggestNeighborhoods } from '../services/neighborhoodSearch'
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function NeighborhoodInput({ value, onChange }: Props) {
+    const { t } = useTranslation()
     const id = useId()
     const [open, setOpen] = useState(false)
     const [active, setActive] = useState(-1)
@@ -23,7 +25,7 @@ export default function NeighborhoodInput({ value, onChange }: Props) {
 
     return (
         <div className="neighborhood-field">
-            <label htmlFor={id}>Ortsteil</label>
+            <label htmlFor={id}>{t("Ortsteil")}</label>
             <input
                 id={id}
                 role="combobox"
@@ -33,7 +35,7 @@ export default function NeighborhoodInput({ value, onChange }: Props) {
                 aria-activedescendant={expanded && active >= 0 ? `${id}-option-${active}` : undefined}
                 aria-describedby={`${id}-hint`}
                 autoComplete="off"
-                placeholder="z. B. Prenzlauer Berg"
+                placeholder={t("z. B. Prenzlauer Berg")}
                 value={value}
                 required
                 onChange={event => {
@@ -65,7 +67,7 @@ export default function NeighborhoodInput({ value, onChange }: Props) {
                 }}
             />
             {expanded && (
-                <ul id={`${id}-list`} role="listbox" aria-label="Ortsteile" className="neighborhood-suggestions">
+                <ul id={`${id}-list`} role="listbox" aria-label={t("Ortsteile")} className="neighborhood-suggestions">
                     {suggestions.map((name, index) => (
                         <li
                             key={name}
@@ -81,10 +83,10 @@ export default function NeighborhoodInput({ value, onChange }: Props) {
                 </ul>
             )}
             <small id={`${id}-hint`} aria-live="polite">
-                {valid ? 'Gültiger Ortsteil ausgewählt.'
+                {valid ? t("Gültiger Ortsteil ausgewählt.")
                     : value.trim() && suggestions.length === 0
-                        ? 'Kein passender Ortsteil gefunden. Bitte prüfe die Schreibweise.'
-                        : 'Ortsteil eingeben und einen Vorschlag auswählen.'}
+                        ? t("Kein passender Ortsteil gefunden. Bitte prüfe die Schreibweise.")
+                        : t("Ortsteil eingeben und einen Vorschlag auswählen.")}
             </small>
         </div>
     )

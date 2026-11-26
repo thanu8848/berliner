@@ -444,3 +444,9 @@
 .duplicate-match { margin: 14px 0; }
 .duplicate-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 .duplicate-notice button { padding: 9px 12px; cursor: pointer; }
+
+.language-switcher { float: right; display: flex; gap: 6px; margin: 0 0 8px 12px; }
+.language-switcher button { padding: 7px 10px; border: 1px solid #ccc; border-radius: 6px; background: white; color: #333; cursor: pointer; }
+.language-switcher button[aria-pressed="true"] { background: #153e75; color: white; border-color: #153e75; }
+.language-switcher button:focus-visible { outline: 3px solid #dca93e; outline-offset: 2px; }
+@media (max-width: 400px) { .language-switcher { float: none; justify-content: flex-end; } }
