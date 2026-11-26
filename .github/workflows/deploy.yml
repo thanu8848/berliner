@@ -20,11 +20,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+
+  # Job 1: Anwendung testen und erstellen
+  build:
     if: github.event_name != 'schedule' || vars.ENABLE_OSM_UPDATES == 'true'
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -76,6 +75,18 @@ jobs:
         with:
           path: ./dist
 
+  # Job 2: Fertige Anwendung veröffentlichen
+  deploy:
+    needs: build
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: Deploy website
         id: deployment
         uses: actions/deploy-pages@v5
