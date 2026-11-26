@@ -2,9 +2,10 @@ import { categoryLabels, statusLabels } from '../data/placeLabels'
 import { translateValidation, clearValidation } from '../i18n'
 import { useTranslation } from 'react-i18next'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { duplicateConfirmationKey, findPossibleDuplicates } from '../services/placeDuplicates'
+import PlaceSearch from './PlaceSearch'
 import NeighborhoodInput from './NeighborhoodInput'
 import type { OsmPlace } from '../services/osm'
 import {
@@ -21,6 +22,7 @@ import type {
 
 // Informationen, die App.tsx an das Formular übergibt
 interface PlaceFormProps {
+    active: boolean
     selectedLocation: {
         latitude: number
         longitude: number
@@ -28,7 +30,6 @@ interface PlaceFormProps {
 
     editingPlace: Place | null
     osmSuggestion: OsmPlace | null
-    osmEnrichment: OsmPlace | null
     allPlaces: Place[]
     onEditExisting: (place: Place) => void
     onCancelNew: () => void
@@ -37,13 +38,16 @@ interface PlaceFormProps {
     onCancelEdit: () => void
     googleMapsSuggestion: string | null
     googlePlaceName: string | null
+    googleAddress: string
+    onPickLocation: () => void
+    onChooseLocation: (location: { latitude: number; longitude: number }) => void
 }
 
 function PlaceForm({
+                       active,
                        selectedLocation,
                        editingPlace,
                        osmSuggestion,
-                       osmEnrichment,
                        allPlaces,
                        onEditExisting,
                        onCancelNew,
@@ -51,7 +55,10 @@ function PlaceForm({
                        onUpdatePlace,
                        onCancelEdit,
                        googleMapsSuggestion,
-                       googlePlaceName
+                       googlePlaceName,
+                       googleAddress,
+                       onPickLocation,
+                       onChooseLocation
                    }: PlaceFormProps) {
     const { t } = useTranslation()
 
@@ -67,7 +74,10 @@ function PlaceForm({
         editingPlace?.category ?? osmSuggestion?.category ?? 'restaurant'
     )
 
-    const categoryEditedRef = useRef(false)
+    const [categoryChosen, setCategoryChosen] = useState(Boolean(editingPlace || osmSuggestion))
+    const [searchOpen, setSearchOpen] = useState(false)
+    const [address, setAddress] = useState(editingPlace?.address ?? osmSuggestion?.address ?? googleAddress)
+    const [enriched, setEnriched] = useState(false)
 
 
     const [cuisine, setCuisine] = useState(
@@ -75,7 +85,7 @@ function PlaceForm({
     )
 
     const [neighborhood, setNeighborhood] = useState(
-        editingPlace?.neighborhood ?? ''
+        editingPlace?.neighborhood ?? (osmSuggestion?.neighborhood && getDistrictForNeighborhood(osmSuggestion.neighborhood) ? osmSuggestion.neighborhood : '')
     )
 
     const [website, setWebsite] = useState(
@@ -125,75 +135,20 @@ function PlaceForm({
         editingPlace?.seating?.cramped ?? false
     )
 
-    // Referenz zum ausklappbaren Formular
-    const detailsRef = useRef<HTMLDetailsElement>(null)
+    // The parent owns coordinates, so returning to the map never remounts this form.
+    const formLocation = selectedLocation
 
-    // Formular automatisch öffnen, wenn ein Ort bearbeitet wird
-
-    useEffect(() => {
-        if (
-            (editingPlace || osmSuggestion || googleMapsSuggestion) &&
-            detailsRef.current
-        ) {
-            detailsRef.current.open = true
-        }
-    }, [editingPlace, osmSuggestion, googleMapsSuggestion])
-
-
-// Fehlende Informationen aus OSM ergänzen
-    useEffect(() => {
-        if (!osmEnrichment || !googleMapsSuggestion || editingPlace) {
-            return
-        }
-
-        // Kategorie nur übernehmen, wenn sie noch
-        // nicht manuell verändert wurde
-        if (!categoryEditedRef.current) {
-            setCategory(osmEnrichment.category)
-        }
-
-        // Küche nur ergänzen, wenn das Feld leer ist
-        setCuisine(current =>
-            current.trim()
-                ? current
-                : osmEnrichment.cuisine.join(', ')
-        )
-
-        // Website nur ergänzen, wenn das Feld leer ist
-        setWebsite(current =>
-            current.trim()
-                ? current
-                : osmEnrichment.website ?? ''
-        )
-
-        // Formular öffnen und sichtbar machen
-        if (detailsRef.current) {
-            detailsRef.current.open = true
-
-            detailsRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            })
-        }
-
-    }, [osmEnrichment, googleMapsSuggestion, editingPlace])
-
-
-
-    // Standort für neuen oder bestehenden Ort festlegen
-
-    const formLocation = editingPlace
-        ? {
-            latitude: editingPlace.latitude,
-            longitude: editingPlace.longitude
-        }
-        : osmSuggestion
-            ? {
-                latitude: osmSuggestion.latitude,
-                longitude: osmSuggestion.longitude
-            }
-            : selectedLocation
-
+    function enrichFromCatalog(place: OsmPlace) {
+        setName(current => current.trim() ? current : place.name)
+        setAddress(current => current.trim() ? current : place.address ?? '')
+        setCuisine(current => current.trim() ? current : place.cuisine.join(', '))
+        setWebsite(current => current.trim() ? current : place.website ?? '')
+        setNeighborhood(current => current || (place.neighborhood && getDistrictForNeighborhood(place.neighborhood) ? place.neighborhood : ''))
+        if (!categoryChosen) { setCategory(place.category); setCategoryChosen(true) }
+        if (!formLocation) onChooseLocation({ latitude: place.latitude, longitude: place.longitude })
+        setEnriched(true)
+        setSearchOpen(false)
+    }
 
     const [settledName, setSettledName] = useState(name)
     const [confirmedDuplicateKey, setConfirmedDuplicateKey] = useState<string>()
@@ -227,11 +182,11 @@ function PlaceForm({
         event.preventDefault()
 
         // Pflichtfelder prüfen
-        if (!formLocation || !name.trim() || !neighborhood) {
+        if (!formLocation || !name.trim()) {
             return
         }
 
-        const district = getDistrictForNeighborhood(neighborhood)
+        const district = neighborhood ? getDistrictForNeighborhood(neighborhood) : editingPlace?.district
 
         if (!district) return
 
@@ -253,7 +208,9 @@ function PlaceForm({
                 .filter(Boolean),
 
             district,
-            neighborhood,
+            neighborhood: neighborhood || undefined,
+            address: address.trim() || undefined,
+            osmId: editingPlace?.osmId ?? osmSuggestion?.osmId,
 
             latitude: formLocation.latitude,
             longitude: formLocation.longitude,
@@ -284,46 +241,20 @@ function PlaceForm({
             return
         }
 
-        // Formular nur nach erfolgreichem Hinzufügen oder Bearbeiten zurücksetzen
-        setName('')
-        setCategory('restaurant')
-        setCuisine('')
-        setNeighborhood('')
-        setWebsite('')
-        setGoogleMapsUrl('')
-        setStatus('vorgemerkt')
-        setNotes('')
-
-        setSeating('unknown')
-        setCapacity('unknown')
-        setIndoor(false)
-        setOutdoor(false)
-        setCozy(false)
-        setCramped(false)
-
-        // Formular schließen
-        if (detailsRef.current) {
-            detailsRef.current.open = false
-        }
+        // Parent closes the editor only after a successful save.
     }
 
     return (
-        <details ref={detailsRef} className="place-form">
-
-
-            <summary>
-                {editingPlace
-                    ? t('Ort bearbeiten: {{name}}', { name: editingPlace.name })
-                    : osmSuggestion
-                        ? t('OSM-Ort übernehmen: {{name}}', { name: osmSuggestion.name })
-                        : t("+ Neuen Ort hinzufügen")}
-            </summary>
-
-
+        <div className="place-form">
             <form
                 className="place-form-content"
                 onSubmit={handleSubmit}
-                onInvalidCapture={translateValidation}
+                onInvalidCapture={event => {
+                    const field = event.target as HTMLElement
+                    const details = field.closest('details')
+                    if (details) details.open = true
+                    translateValidation(event)
+                }}
                 onInputCapture={clearValidation}
             >
 
@@ -368,7 +299,7 @@ function PlaceForm({
                         <select
                             value={category}
                             onChange={e => {
-                                categoryEditedRef.current = true
+                                setCategoryChosen(true)
                                 setCategory(e.target.value as PlaceCategory)
                             }}
                         >
@@ -380,6 +311,27 @@ function PlaceForm({
                         </select>
                     </label>
 
+                    <label>{t('Adresse (optional)')}<input value={address} onChange={event => setAddress(event.target.value)} placeholder={t('Straße, Hausnummer, Postleitzahl')} /></label>
+
+                    <NeighborhoodInput
+                        required={!editingPlace?.district}
+                        value={neighborhood}
+                        onChange={setNeighborhood}
+                    />
+
+                </div>
+
+                <div className="location-summary">
+                    <span>{t(formLocation ? 'Standort ausgewählt' : 'Noch kein Standort ausgewählt')}</span>
+                    <button type="button" onClick={onPickLocation}>{t(formLocation ? 'Auf Karte ändern' : 'Auf Karte auswählen')}</button>
+                </div>
+                <section className="enrichment">
+                    <button type="button" aria-expanded={searchOpen} onClick={() => setSearchOpen(open => !open)}>{t(searchOpen ? 'Suche schließen' : 'Angaben aus Ortskatalog ergänzen')}</button>
+                    <small>{t('Optional. Du kannst jederzeit ohne Ergänzung speichern.')}</small>
+                    {enriched && <p role="status">{t('Fehlende Angaben ergänzt. Bitte prüfe die Angaben.')}</p>}
+                    {searchOpen && active && <PlaceSearch name={name} location={formLocation} category={categoryChosen ? category : undefined} onSelect={enrichFromCatalog} />}
+                </section>
+                <details className="extra-fields"><summary>{t('Weitere Angaben (optional)')}</summary>
                     <label>
                         {t("Küche / Angebot")}
                         <input
@@ -389,13 +341,6 @@ function PlaceForm({
                             placeholder={t("z. B. Döner, Vietnamesisch")}
                         />
                     </label>
-
-                    <NeighborhoodInput
-                        value={neighborhood}
-                        onChange={setNeighborhood}
-                    />
-
-                </div>
 
                 {/* Sitzmöglichkeiten */}
 
@@ -550,9 +495,11 @@ function PlaceForm({
                     />
                 </label>
 
+                </details>
+
                 {/* Vorschau */}
 
-                <div className="place-preview">
+                <details className="place-preview"><summary>{t("Vorschau")}</summary>
 
                     <strong>
                         {editingPlace
@@ -599,50 +546,25 @@ function PlaceForm({
                         </p>
                     )}
 
-                </div>
+                </details>
 
-                {/* Standortinformationen */}
-
-                <div className="form-location">
-                    {formLocation ? (
-                        <p>
-                            {t("Standort:")}
-                            {' '}{formLocation.latitude.toFixed(6)},
-                            {' '}{formLocation.longitude.toFixed(6)}
-                        </p>
-                    ) : (
-                        <p>
-                            {t("Bitte zuerst einen Standort auf der Karte auswählen.")}
-                        </p>
-                    )}
-                </div>
-
-                {/* Speichern */}
+                <div className="form-actions">
 
                 <button
                     type="submit"
                     className="save-place-button"
-                    disabled={!formLocation || !name.trim() || !getDistrictForNeighborhood(neighborhood)}
+                    disabled={!formLocation || !name.trim() || !(neighborhood ? getDistrictForNeighborhood(neighborhood) : editingPlace?.district)}
                 >
                     {editingPlace
                         ? t("Änderungen speichern")
                         : t("Ort hinzufügen")}
                 </button>
 
-                {/* Bearbeitung abbrechen */}
-
-                {editingPlace && (
-                    <button
-                        type="button"
-                        className="cancel-edit-button"
-                        onClick={onCancelEdit}
-                    >
-                        {t("Bearbeitung abbrechen")}
-                    </button>
-                )}
+                <button type="button" className="cancel-edit-button" onClick={editingPlace ? onCancelEdit : onCancelNew}>{t('Abbrechen')}</button>
+                </div>
 
             </form>
-        </details>
+        </div>
     )
 }
 

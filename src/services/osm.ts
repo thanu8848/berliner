@@ -9,6 +9,8 @@ export interface OsmPlace {
     latitude: number
     longitude: number
     cuisine: string[]
+    address?: string
+    neighborhood?: string
     website?: string
 }
 
@@ -41,7 +43,8 @@ const categoryMapping: Record<string, PlaceCategory> = {
 // Orte im Umkreis von 100 Metern suchen
 export async function searchNearbyOsmPlaces(
     latitude: number,
-    longitude: number
+    longitude: number,
+    signal?: AbortSignal
 ): Promise<OsmPlace[]> {
 
     const query = `
@@ -52,10 +55,17 @@ export async function searchNearbyOsmPlaces(
     out center;
   `
 
+    const controller = new AbortController()
+    const cancel = () => controller.abort()
+    if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError')
+    signal?.addEventListener('abort', cancel, { once: true })
+    const timeout = setTimeout(cancel, 10000)
+    try {
     const response = await fetch(
         'https://overpass-api.de/api/interpreter',
         {
             method: 'POST',
+            signal: controller.signal,
             body: new URLSearchParams({ data: query })
         }
     )
@@ -96,9 +106,12 @@ export async function searchNearbyOsmPlaces(
             cuisine: tags.cuisine
                 ? tags.cuisine.split(';').map(c => c.trim())
                 : [],
+            address: [ [tags['addr:street'], tags['addr:housenumber']].filter(Boolean).join(' '), [tags['addr:postcode'], tags['addr:city']].filter(Boolean).join(' ') ].filter(Boolean).join(', ') || undefined,
+            neighborhood: tags['addr:suburb'],
             website: tags.website ?? tags['contact:website']
         })
     }
 
     return results
+    } finally { clearTimeout(timeout); signal?.removeEventListener('abort', cancel) }
 }

@@ -4,11 +4,12 @@ import { getDistrictForNeighborhood } from '../data/berlinOrtsteile'
 import { suggestNeighborhoods } from '../services/neighborhoodSearch'
 
 interface Props {
+    required?: boolean
     value: string
     onChange: (value: string) => void
 }
 
-export default function NeighborhoodInput({ value, onChange }: Props) {
+export default function NeighborhoodInput({ value, onChange, required = true }: Props) {
     const { t } = useTranslation()
     const id = useId()
     const [open, setOpen] = useState(false)
@@ -37,7 +38,7 @@ export default function NeighborhoodInput({ value, onChange }: Props) {
                 autoComplete="off"
                 placeholder={t("z. B. Prenzlauer Berg")}
                 value={value}
-                required
+                required={required}
                 onChange={event => {
                     onChange(event.target.value)
                     setActive(-1)

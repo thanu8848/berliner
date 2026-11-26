@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --import ./tests/loader.mjs --test tests/*.test.ts",
+    "check:worker": "tsc -p cloudflare/tsconfig.json",
+    "catalog:build": "python3 scripts/build_catalog.py"
   },
   "dependencies": {
     "i18next": "^27.2.9",

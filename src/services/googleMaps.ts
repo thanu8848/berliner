@@ -1,3 +1,5 @@
+import { googleMapsUrl, isShortMapsUrl } from './googleMapsUrls'
+
 
 export type GoogleMapsResult =
     | {
@@ -21,35 +23,9 @@ function validCoordinates(latitude: number, longitude: number) {
 export function parseGoogleMapsLink(
     input: string
 ): GoogleMapsResult {
-    let url: URL
-
-    try {
-        url = new URL(input.trim())
-    } catch {
-        return { kind: 'invalid' }
-    }
-
-    if (url.protocol !== 'https:') {
-        return { kind: 'invalid' }
-    }
-
-    const host = url.hostname.toLowerCase()
-
-    // Google Maps-Kurzlinks
-    if (
-        host === 'maps.app.goo.gl' ||
-        (host === 'goo.gl' && url.pathname.startsWith('/maps/'))
-    ) {
-        return { kind: 'short' }
-    }
-
-    // Nur unterstützte Google-Domains akzeptieren
-    const googleDomain =
-        /^(?:www\.|maps\.)?google\.(?:[a-z]{2,3}|co\.[a-z]{2}|com\.[a-z]{2})$/
-
-    if (!googleDomain.test(host)) {
-        return { kind: 'invalid' }
-    }
+    const url = googleMapsUrl(input)
+    if (!url) return { kind: 'invalid' }
+    if (isShortMapsUrl(url)) return { kind: 'short' }
 
     let decodedUrl = url.href
 
@@ -112,32 +88,37 @@ export function parseGoogleMapsLink(
 }
 
 
-export function extractGoogleMapsPlaceName(
-    input: string
-): string | null {
+export function extractGoogleMapsPlaceName(input: string): string | null {
+    const url = googleMapsUrl(input)
+    if (!url || isShortMapsUrl(url)) return null
     try {
-        const url = new URL(input.trim())
+        const match = url.pathname.match(/\/maps\/place\/([^/]+)/)
+        const text = match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : (url.searchParams.get('query') ?? url.searchParams.get('q'))
+        if (!text || /^\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*$/.test(text)) return null
+        return text.trim() || null
+    } catch { return null }
+}
 
-        // Namen aus /maps/place/NAME/ auslesen
-        const match = url.pathname.match(
-            /\/maps\/place\/([^/]+)/
-        )
+// Split only a strong Berlin street/house-number/postcode suffix, retaining commas in names.
+export function splitPlaceLabel(label: string | null): { name: string; address: string } {
+    if (!label) return { name: '', address: '' }
+    const match = label.match(/^(.+),\s*([^,]+\s+\d+[a-z]?(?:[-/]\d+[a-z]?)?),\s*((?:10|12|13|14)\d{3}\s+Berlin)(?:,\s*(?:Deutschland|Germany))?$/i)
+    if (!match) return { name: label, address: '' }
+    return { name: match[1].trim(), address: `${match[2].trim()}, ${match[3].trim()}` }
+}
 
-        if (!match) return null
-
-        // Pluszeichen und Sonderzeichen umwandeln
-        const decodedName = decodeURIComponent(
-            match[1].replace(/\+/g, ' ')
-        )
-
-        // Zusätze nach " - " zunächst entfernen
-        const name = decodedName
-            .split(/\s+-\s+/)[0]
-            .trim()
-
-        return name || null
-
-    } catch {
-        return null
-    }
+export async function resolveGoogleMapsLink(input: string, endpoint: string | undefined, signal: AbortSignal): Promise<string> {
+    const url = googleMapsUrl(input)
+    if (!url) throw new Error('invalid_link')
+    if (!isShortMapsUrl(url)) return url.href
+    if (!endpoint) throw new Error('resolver_unconfigured')
+    const response = await fetch(endpoint, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url.href }), signal
+    })
+    if (!response.ok) throw new Error('resolver_failed')
+    const data = await response.json()
+    const resolved = typeof data.url === 'string' ? googleMapsUrl(data.url) : null
+    if (!resolved || isShortMapsUrl(resolved)) throw new Error('resolver_failed')
+    return resolved.href
 }

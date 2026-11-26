@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+  schedule:
+    - cron: '23 5 * * *'
+
   workflow_dispatch:
 
 permissions:
@@ -18,11 +21,13 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name != 'schedule' || vars.ENABLE_OSM_UPDATES == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -37,7 +42,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Restore OSM download cache
+        if: vars.ENABLE_OSM_UPDATES == 'true'
+        uses: actions/cache@v4
+        with:
+          path: .catalog-cache
+          key: berlin-osm-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: berlin-osm-${{ runner.os }}-
+
+      - name: Refresh catalog from the latest Berlin extract
+        if: vars.ENABLE_OSM_UPDATES == 'true'
+        run: |
+          python3 -m venv .catalog-venv
+          .catalog-venv/bin/pip install -r scripts/catalog-requirements.txt
+          .catalog-venv/bin/python scripts/build_catalog.py
+
+      - name: Test imports and catalog
+        run: npm test
+
+      - name: Check link resolver
+        run: npm run check:worker
+
       - name: Build application
+        env:
+          VITE_MAPS_RESOLVER_URL: ${{ vars.VITE_MAPS_RESOLVER_URL }}
         run: npm run build
 
       - name: Setup GitHub Pages

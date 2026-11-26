@@ -45,6 +45,8 @@ export interface Place {
     status: PlaceStatus
 
     smokingAllowed?: boolean
+    address?: string
+    osmId?: string
     website?: string
     googleMapsUrl?: string
     notes?: string

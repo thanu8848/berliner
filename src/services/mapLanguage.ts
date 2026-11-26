@@ -3,6 +3,7 @@ import i18n from '../i18n'
 // MapLibre creates controls outside React. Keep labels current without resetting the map.
 export function bindMapLanguage(container: HTMLElement): () => void {
     const labels: Record<string, string> = {
+        '.maplibregl-ctrl-geolocate': 'Meinen Standort anzeigen',
         '.maplibregl-canvas': 'Karte',
         '.maplibregl-marker': 'Kartenmarkierung',
         '.maplibregl-ctrl-zoom-in': 'Vergrößern',
