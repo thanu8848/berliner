@@ -173,5 +173,22 @@
   "Ortsangaben werden geladen …": "Loading place details …",
   "Ortskatalog konnte nicht geladen werden. Bitte versuche es erneut.": "Could not load the place catalog. Please try again.",
   "Kein passender Katalogeintrag für „{{name}}“. Nutze „Ort selbst hinzufügen“.": "No matching catalog entry for “{{name}}”. Use “Add place manually”.",
-  "Diesen Ort übernehmen? Deine bisherigen, ungespeicherten Eingaben werden dabei verworfen.": "Use this place? Your current unsaved changes will be discarded."
+  "Diesen Ort übernehmen? Deine bisherigen, ungespeicherten Eingaben werden dabei verworfen.": "Use this place? Your current unsaved changes will be discarded.",
+  "Bitte gib einen Namen für den Ort ein.": "Please enter a name for this place.",
+  "Bitte wähle einen gültigen Ortsteil aus den Vorschlägen.": "Please choose a valid neighborhood from the suggestions.",
+  "Der Standort fehlt noch. Bitte wähle den Ort auf der Karte oder über die Suche.": "The location is still missing. Please select the place on the map or using search.",
+  "Zum Speichern fehlt noch:": "Before saving, please complete:",
+  "Optional. Der bisherige Bezirk bleibt erhalten.": "Optional. The existing district will be kept.",
+  "Anderen Ort suchen": "Search for another place",
+  "Passender Ort": "Matching place",
+  "Ort suchen": "Search for a place",
+  "Diesen Ort übernehmen": "Use this place",
+  "Passende Orte werden gesucht …": "Looking for matching places …",
+  "Die Suche ist gerade nicht verfügbar. Bitte wähle den Standort auf der Karte.": "Search is currently unavailable. Please select the location on the map.",
+  "Kein eindeutiger Treffer gefunden. Du kannst den Standort selbst auf der Karte auswählen.": "No clear match found. You can select the location on the map yourself.",
+  "Standort auf Karte auswählen": "Select location on map",
+  "Link übernommen. Die Kurzlink-Auflösung ist noch nicht freigeschaltet. Nutze die Suche oder die Karte.": "Link received. Short-link resolution is not enabled yet. Use search or the map.",
+  "Link übernommen. Der Ort konnte nicht automatisch erkannt werden. Nutze die Suche oder die Karte.": "Link received. The place could not be identified automatically. Use search or the map.",
+  "Link übernommen. Bitte prüfe und vervollständige die Angaben unten.": "Link received. Please check and complete the details below.",
+  "Keine passenden Ergänzungen gefunden. Dein ausgewählter Standort bleibt erhalten.": "No matching details found. Your selected location will be kept."
 }

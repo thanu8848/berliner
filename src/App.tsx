@@ -139,8 +139,8 @@ export default function App() {
         } catch (error) {
             if (importRequest.current !== controller) return
             message = error instanceof Error && error.message === 'resolver_unconfigured'
-                ? 'Kurzlink gespeichert. Die automatische Auflösung ist noch nicht freigeschaltet. Wähle den Ort im Katalog oder auf der Karte.'
-                : 'Link gespeichert. Der Ort konnte nicht automatisch erkannt werden. Wähle ihn im Katalog oder auf der Karte.'
+                ? 'Link übernommen. Die Kurzlink-Auflösung ist noch nicht freigeschaltet. Nutze die Suche oder die Karte.'
+                : 'Link übernommen. Der Ort konnte nicht automatisch erkannt werden. Nutze die Suche oder die Karte.'
         } finally { clearTimeout(timer) }
         if (importRequest.current !== controller) return
         const result = parseGoogleMapsLink(resolved)
@@ -149,7 +149,7 @@ export default function App() {
             location: result.kind === 'coordinates' ? { latitude: result.latitude, longitude: result.longitude } : null })
         setImportMessage(message || (result.kind === 'coordinates'
             ? 'Angaben erkannt. Bitte prüfe Name und Standort vor dem Speichern.'
-            : 'Link übernommen. Bitte wähle den Ort im Katalog oder auf der Karte.'))
+            : 'Link übernommen. Bitte prüfe und vervollständige die Angaben unten.'))
         setImporting(false)
         importRequest.current = null
         setScreen('form')

@@ -31,6 +31,7 @@ export default function NeighborhoodInput({ value, onChange, required = true }: 
                 id={id}
                 role="combobox"
                 aria-autocomplete="list"
+                aria-invalid={!valid && (required || Boolean(value))}
                 aria-expanded={expanded}
                 aria-controls={expanded ? `${id}-list` : undefined}
                 aria-activedescendant={expanded && active >= 0 ? `${id}-option-${active}` : undefined}
@@ -83,11 +84,11 @@ export default function NeighborhoodInput({ value, onChange, required = true }: 
                     ))}
                 </ul>
             )}
-            <small id={`${id}-hint`} aria-live="polite">
+            <small id={`${id}-hint`} className={!valid && (required || value) ? 'field-hint' : undefined} aria-live="polite">
                 {valid ? t("Gültiger Ortsteil ausgewählt.")
                     : value.trim() && suggestions.length === 0
                         ? t("Kein passender Ortsteil gefunden. Bitte prüfe die Schreibweise.")
-                        : t("Ortsteil eingeben und einen Vorschlag auswählen.")}
+                        : !required && !value ? t("Optional. Der bisherige Bezirk bleibt erhalten.") : t("Bitte wähle einen gültigen Ortsteil aus den Vorschlägen.")}
             </small>
         </div>
     )

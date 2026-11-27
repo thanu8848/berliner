@@ -173,5 +173,22 @@
   "Ortsangaben werden geladen …": "Ortsangaben werden geladen …",
   "Ortskatalog konnte nicht geladen werden. Bitte versuche es erneut.": "Ortskatalog konnte nicht geladen werden. Bitte versuche es erneut.",
   "Kein passender Katalogeintrag für „{{name}}“. Nutze „Ort selbst hinzufügen“.": "Kein passender Katalogeintrag für „{{name}}“. Nutze „Ort selbst hinzufügen“.",
-  "Diesen Ort übernehmen? Deine bisherigen, ungespeicherten Eingaben werden dabei verworfen.": "Diesen Ort übernehmen? Deine bisherigen, ungespeicherten Eingaben werden dabei verworfen."
+  "Diesen Ort übernehmen? Deine bisherigen, ungespeicherten Eingaben werden dabei verworfen.": "Diesen Ort übernehmen? Deine bisherigen, ungespeicherten Eingaben werden dabei verworfen.",
+  "Bitte gib einen Namen für den Ort ein.": "Bitte gib einen Namen für den Ort ein.",
+  "Bitte wähle einen gültigen Ortsteil aus den Vorschlägen.": "Bitte wähle einen gültigen Ortsteil aus den Vorschlägen.",
+  "Der Standort fehlt noch. Bitte wähle den Ort auf der Karte oder über die Suche.": "Der Standort fehlt noch. Bitte wähle den Ort auf der Karte oder über die Suche.",
+  "Zum Speichern fehlt noch:": "Zum Speichern fehlt noch:",
+  "Optional. Der bisherige Bezirk bleibt erhalten.": "Optional. Der bisherige Bezirk bleibt erhalten.",
+  "Anderen Ort suchen": "Anderen Ort suchen",
+  "Passender Ort": "Passender Ort",
+  "Ort suchen": "Ort suchen",
+  "Diesen Ort übernehmen": "Diesen Ort übernehmen",
+  "Passende Orte werden gesucht …": "Passende Orte werden gesucht …",
+  "Die Suche ist gerade nicht verfügbar. Bitte wähle den Standort auf der Karte.": "Die Suche ist gerade nicht verfügbar. Bitte wähle den Standort auf der Karte.",
+  "Kein eindeutiger Treffer gefunden. Du kannst den Standort selbst auf der Karte auswählen.": "Kein eindeutiger Treffer gefunden. Du kannst den Standort selbst auf der Karte auswählen.",
+  "Standort auf Karte auswählen": "Standort auf Karte auswählen",
+  "Link übernommen. Die Kurzlink-Auflösung ist noch nicht freigeschaltet. Nutze die Suche oder die Karte.": "Link übernommen. Die Kurzlink-Auflösung ist noch nicht freigeschaltet. Nutze die Suche oder die Karte.",
+  "Link übernommen. Der Ort konnte nicht automatisch erkannt werden. Nutze die Suche oder die Karte.": "Link übernommen. Der Ort konnte nicht automatisch erkannt werden. Nutze die Suche oder die Karte.",
+  "Link übernommen. Bitte prüfe und vervollständige die Angaben unten.": "Link übernommen. Bitte prüfe und vervollständige die Angaben unten.",
+  "Keine passenden Ergänzungen gefunden. Dein ausgewählter Standort bleibt erhalten.": "Keine passenden Ergänzungen gefunden. Dein ausgewählter Standort bleibt erhalten."
 }

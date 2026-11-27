@@ -1,3 +1,4 @@
+import { validLocation } from './placeValidation'
 import type { PlaceCategory } from '../types/place'
 import type { OsmPlace } from './osm'
 import { distanceInMeters, isSimilarPlaceName, normalizePlaceName } from './placeDuplicates'
@@ -74,4 +75,37 @@ export function searchCatalog(places: OsmPlace[], query: string, location?: { la
     }).filter(p => p.score < 3)
         .sort((a, b) => a.score - b.score || a.distance - b.distance || a.place.name.localeCompare(b.place.name, 'de'))
         .slice(0, 30).map(result => result.place)
+}
+
+// A name alone is insufficient: branches often share the same name.
+// Compare street + house number; postcode conflicts must not match.
+function addressParts(address: string) {
+    const street = address.split(',')[0].trim().toLowerCase().replace(/str\.(?=\s|\d|$)/g, 'straße')
+    const match = street.match(/^(.*?)\s*(\d+[a-z]?(?:[-/]\d+[a-z]?)?)$/i)
+    return match ? { street: normalizePlaceName(match[1]), number: match[2], postcode: address.match(/\b\d{5}\b/)?.[0] } : null
+}
+
+export function matchImportedPlace(places: OsmPlace[], name: string, address: string, location?: { latitude: number; longitude: number } | null): OsmPlace[] {
+    if (!name.trim()) return []
+    const importedAddress = addressParts(address)
+    const hasLocation = validLocation(location)
+    const nameTokens = (value: string) => value.split(/[^\p{L}\p{N}]+/u).map(normalizePlaceName).filter(Boolean)
+    const importedTokens = nameTokens(name)
+    const plausible = places.filter(place => {
+        const tokens = nameTokens(place.name)
+        // OSM may omit a descriptor: 'Falafel Humbaba' versus 'Humbaba'.
+        const tokenMatch = importedTokens.some(token => token.length >= 4) && tokens.some(token => token.length >= 4)
+            && (tokens.every(token => importedTokens.includes(token)) || importedTokens.every(token => tokens.includes(token)))
+        if (!validLocation(place) || !(isSimilarPlaceName(name, place.name) || tokenMatch)) return false
+        const catalogAddress = addressParts(place.address ?? '')
+        const sameAddress = importedAddress && catalogAddress
+            ? importedAddress.street === catalogAddress.street && importedAddress.number === catalogAddress.number
+                && !(importedAddress.postcode && catalogAddress.postcode && importedAddress.postcode !== catalogAddress.postcode)
+            : null
+        // Reject contradictory evidence, even if the shop next door has a similar name.
+        if (sameAddress === false) return false
+        if (hasLocation && location) return distanceInMeters(location, place) <= 100
+        return sameAddress === true
+    })
+    return hasLocation ? searchCatalog(plausible, '', location) : plausible.slice(0, 30)
 }

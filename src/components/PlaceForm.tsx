@@ -2,9 +2,10 @@ import { categoryLabels, statusLabels } from '../data/placeLabels'
 import { translateValidation, clearValidation } from '../i18n'
 import { useTranslation } from 'react-i18next'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useId } from 'react'
 import type { FormEvent } from 'react'
 import { duplicateConfirmationKey, findPossibleDuplicates } from '../services/placeDuplicates'
+import { placeRequirements, validLocation } from '../services/placeValidation'
 import PlaceSearch from './PlaceSearch'
 import NeighborhoodInput from './NeighborhoodInput'
 import type { OsmPlace } from '../services/osm'
@@ -61,6 +62,7 @@ function PlaceForm({
                        onChooseLocation
                    }: PlaceFormProps) {
     const { t } = useTranslation()
+    const hintId = useId()
 
     // Eingabefelder mit vorhandenen Daten initialisieren
     const [name, setName] = useState(
@@ -136,7 +138,8 @@ function PlaceForm({
     )
 
     // The parent owns coordinates, so returning to the map never remounts this form.
-    const formLocation = selectedLocation
+    const formLocation = validLocation(selectedLocation) ? selectedLocation : null
+    const { district, missing } = placeRequirements(name, neighborhood, formLocation, editingPlace?.district)
 
     function enrichFromCatalog(place: OsmPlace) {
         setName(current => current.trim() ? current : place.name)
@@ -182,13 +185,10 @@ function PlaceForm({
         event.preventDefault()
 
         // Pflichtfelder prüfen
-        if (!formLocation || !name.trim()) {
+        if (!formLocation || missing.length || !district) {
             return
         }
 
-        const district = neighborhood ? getDistrictForNeighborhood(neighborhood) : editingPlace?.district
-
-        if (!district) return
 
         // Datensatz erstellen oder vorhandenen aktualisieren
         const placeData: Place = {
@@ -288,10 +288,13 @@ function PlaceForm({
                         <input
                             type="text"
                             value={name}
+                            aria-invalid={!name.trim()}
+                            aria-describedby={!name.trim() ? `${hintId}-name` : undefined}
                             onChange={e => { setName(e.target.value); setConfirmedDuplicateKey(undefined) }}
                             placeholder={t("z. B. Kebapci Hamdi Baba")}
                             required
                         />
+                        {!name.trim() && <small id={`${hintId}-name`} className="field-hint">{t('Bitte gib einen Namen für den Ort ein.')}</small>}
                     </label>
 
                     <label>
@@ -321,13 +324,14 @@ function PlaceForm({
 
                 </div>
 
-                <div className="location-summary">
+                <div className="location-summary" aria-describedby={!formLocation ? `${hintId}-location` : undefined}>
                     <span>{t(formLocation ? 'Standort ausgewählt' : 'Noch kein Standort ausgewählt')}</span>
-                    <button type="button" onClick={onPickLocation}>{t(formLocation ? 'Auf Karte ändern' : 'Auf Karte auswählen')}</button>
+                    <button type="button" onClick={onPickLocation}>{t(formLocation ? 'Auf Karte ändern' : 'Standort auf Karte auswählen')}</button>
+                    {!formLocation && <p id={`${hintId}-location`} className="field-hint" role="status">{t('Der Standort fehlt noch. Bitte wähle den Ort auf der Karte oder über die Suche.')}</p>}
                 </div>
                 <section className="enrichment">
-                    <button type="button" aria-expanded={searchOpen} onClick={() => setSearchOpen(open => !open)}>{t(searchOpen ? 'Suche schließen' : 'Angaben aus Ortskatalog ergänzen')}</button>
-                    <small>{t('Optional. Du kannst jederzeit ohne Ergänzung speichern.')}</small>
+                    <button type="button" aria-expanded={searchOpen} onClick={() => setSearchOpen(open => !open)}>{t(searchOpen ? 'Suche schließen' : 'Anderen Ort suchen')}</button>
+                    {!searchOpen && !enriched && googleMapsSuggestion && active && <PlaceSearch automatic name={name} address={address} location={formLocation} onSelect={enrichFromCatalog} />}
                     {enriched && <p role="status">{t('Fehlende Angaben ergänzt. Bitte prüfe die Angaben.')}</p>}
                     {searchOpen && active && <PlaceSearch name={name} location={formLocation} category={categoryChosen ? category : undefined} onSelect={enrichFromCatalog} />}
                 </section>
@@ -550,10 +554,15 @@ function PlaceForm({
 
                 <div className="form-actions">
 
+                {missing.length > 0 && <div id={`${hintId}-missing`} className="validation-summary" role="status">
+                    <strong>{t('Zum Speichern fehlt noch:')}</strong>
+                    <ul>{missing.map(message => <li key={message}>{t(message)}</li>)}</ul>
+                </div>}
                 <button
                     type="submit"
                     className="save-place-button"
-                    disabled={!formLocation || !name.trim() || !(neighborhood ? getDistrictForNeighborhood(neighborhood) : editingPlace?.district)}
+                    disabled={missing.length > 0}
+                    aria-describedby={missing.length ? `${hintId}-missing` : undefined}
                 >
                     {editingPlace
                         ? t("Änderungen speichern")
