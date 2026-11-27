@@ -35,3 +35,13 @@ export async function lookupAddress(address: string, endpoint: string | null, si
     return data.results.filter((p: AddressLocation) => p && insideBerlin(p.latitude, p.longitude)
         && typeof p.address === 'string' && typeof p.approximate === 'boolean').slice(0, 5)
 }
+
+export function addressParts(input: string): { street: string; house: string; postcode: string } | null {
+    const normalized = berlinAddress(input)
+    const match = normalized?.match(/^(.*?)\s+(\d+[a-z]?(?:[-/]\d+[a-z]?)?),\s*(\d{5})\s+Berlin$/i)
+    return match ? { street: match[1], house: match[2], postcode: match[3] } : null
+}
+export function normalizeStreet(value: string): string {
+    return value.toLowerCase().replace(/str\.(?=\s|$)/g, 'straße').replace(/ß/g, 'ss')
+        .normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
+}

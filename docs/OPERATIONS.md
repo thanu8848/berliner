@@ -143,3 +143,24 @@ Vor Veröffentlichung:
 
 Prüfung: `npm test`, `npm run lint`, `npm run check:worker`, `npm run build`.
 Worker-Probelauf ohne Veröffentlichung: `npx wrangler@4 deploy --dry-run --config cloudflare/wrangler.jsonc`.
+
+
+## Genauigkeit und Ortsteile (2026-11-28)
+
+Adresssuche nutzt strukturierte Straße/Hausnummer/PLZ statt Freitext. Ergebnisse werden
+gegen die Anfrage geprüft: widersprüchliche Straßen, Hausnummern (auch Zusätze) und PLZ
+werden ausgeschlossen. Passende Bereiche und fehlende Hausnummer/PLZ sind nur ungefähre
+Vorschläge. Vollständige Übereinstimmungen stehen zuerst; auch sie benötigen Kartenbestätigung.
+Dies ist eine Plausibilitätsprüfung, keine Garantie für die Genauigkeit der Quelldaten.
+Cacheversion `address-v2` verhindert Wiederverwendung früher ungeprüfter Ergebnisse.
+Globale Drosselung und Timeout bleiben unverändert.
+
+Ortsteile werden lokal aus den amtlichen, unveränderten ALKIS-Polygonen des Geoportals Berlin
+bestimmt. Quelle/Lizenz: `public/boundaries/SOURCE.txt`; Snapshot abgerufen am 2026-11-28.
+97 Ortsteile, keine Bezirkszuordnung aus Nominatim. Bezirk folgt aus der bestehenden Ortsteiltabelle.
+Die Datei wird erst bei vorhandenem bestätigtem Standort geladen und im Speicher wiederverwendet.
+Unbestätigte Geocoding-Vorschläge lösen keine automatische Feldübernahme aus.
+Im Abstand bis zehn Meter zu einer Grenze bzw. außerhalb/bei Mehrdeutigkeit wird nicht automatisch
+zugeordnet. Manuelle und vorhandene Angaben bleiben erhalten; Abweichungen werden angezeigt.
+Automatisch abgeleitete Angaben folgen Standortkorrekturen, bis der Nutzer das Feld selbst bearbeitet.
+Keine zusätzliche Geocoding-Anfrage, kein neues localStorage-Schema.

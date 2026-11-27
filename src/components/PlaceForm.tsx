@@ -1,3 +1,5 @@
+import { loadBoundaries, locateNeighborhood } from '../services/neighborhoodBoundaries'
+import type { Boundary } from '../services/neighborhoodBoundaries'
 import AddressSearch from './AddressSearch'
 import type { AddressLocation } from '../services/addressLookup'
 import { categoryLabels, statusLabels } from '../data/placeLabels'
@@ -90,8 +92,8 @@ function PlaceForm({
         editingPlace?.cuisine?.join(', ') ?? osmSuggestion?.cuisine?.join(', ') ?? ''
     )
 
-    const [neighborhood, setNeighborhood] = useState(
-        editingPlace?.neighborhood ?? (osmSuggestion?.neighborhood && getDistrictForNeighborhood(osmSuggestion.neighborhood) ? osmSuggestion.neighborhood : '')
+    const [neighborhoodInput, setNeighborhoodInput] = useState<string | null>(
+        editingPlace?.neighborhood ?? (osmSuggestion?.neighborhood && getDistrictForNeighborhood(osmSuggestion.neighborhood) ? osmSuggestion.neighborhood : null)
     )
 
     const [website, setWebsite] = useState(
@@ -143,6 +145,20 @@ function PlaceForm({
 
     // The parent owns coordinates, so returning to the map never remounts this form.
     const formLocation = validLocation(selectedLocation) ? selectedLocation : null
+    const [boundaries, setBoundaries] = useState<Boundary[]>()
+    const [boundaryError, setBoundaryError] = useState(false)
+    const hasLocation = Boolean(formLocation)
+    useEffect(() => {
+        if (!hasLocation) return
+        let cancelled = false
+        loadBoundaries().then(data => { if (!cancelled) { setBoundaries(data); setBoundaryError(false) } })
+            .catch(() => { if (!cancelled) setBoundaryError(true) })
+        return () => { cancelled = true }
+    }, [hasLocation])
+    const detected = boundaries && formLocation ? locateNeighborhood(boundaries, formLocation) : null
+    const automaticNeighborhood = detected && !detected.uncertain ? detected.name : null
+    const neighborhood = neighborhoodInput ?? automaticNeighborhood ?? ''
+    const setNeighborhood = (value: string | ((current: string) => string)) => setNeighborhoodInput(typeof value === 'function' ? value(neighborhood) : value)
     const { district, missing } = placeRequirements(name, neighborhood, formLocation, editingPlace?.district)
 
     function enrichFromCatalog(place: OsmPlace) {
@@ -327,6 +343,15 @@ function PlaceForm({
                     />
 
                 </div>
+                {formLocation && <small className="neighborhood-detection" role="status">
+                    {boundaryError ? t('Ortsteil konnte nicht automatisch bestimmt werden. Bitte wähle ihn selbst aus.')
+                        : !detected ? t('Ortsteil wird ermittelt …')
+                        : detected.uncertain ? t('Standort nahe einer Grenze oder nicht eindeutig zuordenbar. Bitte prüfe den Ortsteil.')
+                        : neighborhood === detected.name ? t('Ortsteil anhand des Standorts erkannt. Du kannst ihn korrigieren.')
+                        : t('Zum Standort passt {{name}}. Bitte prüfe deine Ortsteil-Auswahl.', { name: detected.name })}
+                    {' '}<a href="https://gdi.berlin.de/view/alkis_ortsteile" target="_blank" rel="noreferrer">Geoportal Berlin</a>
+                    {automaticNeighborhood && neighborhood !== automaticNeighborhood && <button type="button" onClick={() => setNeighborhoodInput(automaticNeighborhood)}>{t('Erkannten Ortsteil übernehmen')}</button>}
+                </small>}
 
                 <div className="location-summary" aria-describedby={!formLocation ? `${hintId}-location` : undefined}>
                     <span>{t(formLocation ? 'Standort ausgewählt' : 'Noch kein Standort ausgewählt')}</span>

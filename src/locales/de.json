@@ -207,5 +207,11 @@
   "Nur ungefähr: Bitte setze den Marker am richtigen Gebäude.": "Nur ungefähr: Bitte setze den Marker am richtigen Gebäude.",
   "Auf Karte prüfen": "Auf Karte prüfen",
   "Bitte prüfe das Gebäude. Du kannst den Marker verschieben oder auf die Karte tippen.": "Bitte prüfe das Gebäude. Du kannst den Marker verschieben oder auf die Karte tippen.",
-  "Standort bestätigen": "Standort bestätigen"
+  "Standort bestätigen": "Standort bestätigen",
+  "Ortsteil konnte nicht automatisch bestimmt werden. Bitte wähle ihn selbst aus.": "Ortsteil konnte nicht automatisch bestimmt werden. Bitte wähle ihn selbst aus.",
+  "Ortsteil wird ermittelt …": "Ortsteil wird ermittelt …",
+  "Standort nahe einer Grenze oder nicht eindeutig zuordenbar. Bitte prüfe den Ortsteil.": "Standort nahe einer Grenze oder nicht eindeutig zuordenbar. Bitte prüfe den Ortsteil.",
+  "Ortsteil anhand des Standorts erkannt. Du kannst ihn korrigieren.": "Ortsteil anhand des Standorts erkannt. Du kannst ihn korrigieren.",
+  "Zum Standort passt {{name}}. Bitte prüfe deine Ortsteil-Auswahl.": "Zum Standort passt {{name}}. Bitte prüfe deine Ortsteil-Auswahl.",
+  "Erkannten Ortsteil übernehmen": "Erkannten Ortsteil übernehmen"
 }

@@ -207,5 +207,11 @@
   "Nur ungefähr: Bitte setze den Marker am richtigen Gebäude.": "Approximate only: please move the marker to the correct building.",
   "Auf Karte prüfen": "Check on map",
   "Bitte prüfe das Gebäude. Du kannst den Marker verschieben oder auf die Karte tippen.": "Please check the building. You can drag the marker or tap the map.",
-  "Standort bestätigen": "Confirm location"
+  "Standort bestätigen": "Confirm location",
+  "Ortsteil konnte nicht automatisch bestimmt werden. Bitte wähle ihn selbst aus.": "Could not determine the neighborhood. Please choose it yourself.",
+  "Ortsteil wird ermittelt …": "Determining neighborhood …",
+  "Standort nahe einer Grenze oder nicht eindeutig zuordenbar. Bitte prüfe den Ortsteil.": "Location near a boundary or not clearly assignable. Please check the neighborhood.",
+  "Ortsteil anhand des Standorts erkannt. Du kannst ihn korrigieren.": "Neighborhood identified from the location. You can correct it.",
+  "Zum Standort passt {{name}}. Bitte prüfe deine Ortsteil-Auswahl.": "This location is in {{name}}. Please check your selected neighborhood.",
+  "Erkannten Ortsteil übernehmen": "Use detected neighborhood"
 }
