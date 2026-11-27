@@ -100,11 +100,26 @@ export function extractGoogleMapsPlaceName(input: string): string | null {
 }
 
 // Split only a strong Berlin street/house-number/postcode suffix, retaining commas in names.
-export function splitPlaceLabel(label: string | null): { name: string; address: string } {
-    if (!label) return { name: '', address: '' }
-    const match = label.match(/^(.+),\s*([^,]+\s+\d+[a-z]?(?:[-/]\d+[a-z]?)?),\s*((?:10|12|13|14)\d{3}\s+Berlin)(?:,\s*(?:Deutschland|Germany))?$/i)
-    if (!match) return { name: label, address: '' }
-    return { name: match[1].trim(), address: `${match[2].trim()}, ${match[3].trim()}` }
+export function splitPlaceLabel(
+    label: string | null
+): { name: string; address: string } {
+
+    if (!label) {
+        return { name: '', address: '' }
+    }
+
+    const match = label.match(
+        /^(.+),\s*([^,]+\s+\d+[a-z]?(?:[-/]\d+[a-z]?)?),\s*((?:10|12|13|14)\d{3})\s+Berlin(?:-Bezirk\s+[^,]+)?(?:,\s*(?:Deutschland|Germany))?$/i
+    )
+
+    if (!match) {
+        return { name: label, address: '' }
+    }
+
+    return {
+        name: match[1].trim(),
+        address: `${match[2].trim()}, ${match[3]} Berlin`
+    }
 }
 
 export async function resolveGoogleMapsLink(input: string, endpoint: string | undefined, signal: AbortSignal): Promise<string> {
