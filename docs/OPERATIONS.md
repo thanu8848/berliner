@@ -109,3 +109,37 @@ nicht automatisch dem Anwendungscode oder persönlichen Notizen.
 - Langsames Netz: Katalog abbrechen und manuell weiterarbeiten; Standortänderung während Suche.
 
 Kein Commit, Push oder Deployment gehört zur lokalen Vorbereitung.
+
+
+## Adresssuche als bestätigter Ersatzweg
+
+Nach erfolgloser lokaler Geschäftssuche kann der Nutzer ausdrücklich die öffentliche
+Geschäftsadresse suchen lassen. Es werden keine Namen, Notizen oder privaten Adressen
+benötigt. `/resolve` bleibt unverändert; `/geocode` ist eine getrennte POST-Route.
+Die Frontend-URL wird aus `VITE_MAPS_RESOLVER_URL` abgeleitet (gleicher Host, `/geocode`).
+Keine weitere GitHub-Variable und keine Änderung am Pages-Workflow nötig.
+
+Vor Veröffentlichung:
+- Worker-Konfiguration prüfen: `GEOCODER_URL` und `GEOCODER_AGENT` (öffentliche Projektadresse).
+- Die SQLite-Durable-Object-Bindung `GEOCODE` und Migration `geocode-v1` werden erst beim
+  ausdrücklich beauftragten Worker-Deployment angelegt. Kein Account-Geheimnis im Frontend.
+- Ein älterer Worker ohne `/geocode` führt zu einer verständlichen Fehlermeldung;
+  Karte und Kurzlinks bleiben nutzbar.
+- Öffentliche Nominatim-Regeln: https://operations.osmfoundation.org/policies/nominatim/
+  Maximal 1 Anfrage/Sekunde pro Anwendung, kein Autocomplete, keine systematischen Abfragen,
+  App-Kennung, Attribution, keine vertraulichen Daten. Nutzung wurde bewusst für die Beta gewählt.
+- Ein global benanntes Durable Object verhindert parallele Provider-Anfragen; Startabstand
+  mindestens 1,5 Sekunden, persistent über Neustarts. Weitere Nutzer erhalten eine Wiederholen-Meldung.
+  Zusätzlich 10 Aufrufe/Minute je IP. Upstream-429 pausiert den Dienst mindestens 60 Sekunden.
+- Gemeinsamer persistenter Cache: maximal 30 Adressen, Treffer sieben Tage, Fehlanzeigen einen Tag.
+  Providerwechsel trennt Cacheeinträge. Kein automatisches Aktualisieren oder Hintergrundgeocoding.
+- Provider-URL ist eine Worker-Variable: Wechsel zu einem Nominatim-kompatiblen Dienst ohne
+  Frontend-Update; für ein anderes Antwortformat ist der Adapter `nominatimResults` anzupassen.
+- Berlin-Rechteck PLUS Bundeslandprüfung verhindern Vorschläge in Brandenburg.
+  Straßen-/Gebietstreffer werden als ungefähr markiert. Auch Gebäudetreffer müssen bestätigt werden.
+- Provider-Timeout sieben Sekunden, Browser zehn Sekunden. Bei Abbruch oder Formularwechsel
+  werden veraltete Antworten ignoriert. Vorschlagskoordinaten sind getrennt vom Formularstandort.
+- Falls bereits ein verlässlicher Standort vorliegt, wird kein Adressgeocoding angeboten.
+
+Prüfung: `npm test`, `npm run lint`, `npm run check:worker`, `npm run build`.
+Worker-Probelauf ohne Veröffentlichung: `npx wrangler@4 deploy --dry-run --config cloudflare/wrangler.jsonc`.

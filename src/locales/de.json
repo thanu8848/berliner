@@ -190,5 +190,22 @@
   "Link übernommen. Die Kurzlink-Auflösung ist noch nicht freigeschaltet. Nutze die Suche oder die Karte.": "Link übernommen. Die Kurzlink-Auflösung ist noch nicht freigeschaltet. Nutze die Suche oder die Karte.",
   "Link übernommen. Der Ort konnte nicht automatisch erkannt werden. Nutze die Suche oder die Karte.": "Link übernommen. Der Ort konnte nicht automatisch erkannt werden. Nutze die Suche oder die Karte.",
   "Link übernommen. Bitte prüfe und vervollständige die Angaben unten.": "Link übernommen. Bitte prüfe und vervollständige die Angaben unten.",
-  "Keine passenden Ergänzungen gefunden. Dein ausgewählter Standort bleibt erhalten.": "Keine passenden Ergänzungen gefunden. Dein ausgewählter Standort bleibt erhalten."
+  "Keine passenden Ergänzungen gefunden. Dein ausgewählter Standort bleibt erhalten.": "Keine passenden Ergänzungen gefunden. Dein ausgewählter Standort bleibt erhalten.",
+  "Adresse suchen": "Adresse suchen",
+  "Kein Geschäft gefunden? Suche stattdessen nach der Adresse des Gebäudes.": "Kein Geschäft gefunden? Suche stattdessen nach der Adresse des Gebäudes.",
+  "Bitte ergänze Straße, Hausnummer, Postleitzahl und Berlin im Adressfeld.": "Bitte ergänze Straße, Hausnummer, Postleitzahl und Berlin im Adressfeld.",
+  "Adresse wird gesucht …": "Adresse wird gesucht …",
+  "Standort anhand der Adresse suchen": "Standort anhand der Adresse suchen",
+  "Nur die öffentliche Geschäftsadresse wird an den Adressdienst gesendet. Keine privaten Adressen eingeben.": "Nur die öffentliche Geschäftsadresse wird an den Adressdienst gesendet. Keine privaten Adressen eingeben.",
+  "Die Adresssuche ist noch nicht freigeschaltet. Bitte wähle den Standort auf der Karte.": "Die Adresssuche ist noch nicht freigeschaltet. Bitte wähle den Standort auf der Karte.",
+  "Die Adresssuche ist gerade ausgelastet. Bitte versuche es gleich erneut.": "Die Adresssuche ist gerade ausgelastet. Bitte versuche es gleich erneut.",
+  "Die Adresssuche dauert zu lange. Bitte versuche es erneut oder wähle den Standort auf der Karte.": "Die Adresssuche dauert zu lange. Bitte versuche es erneut oder wähle den Standort auf der Karte.",
+  "Die Adresssuche ist gerade nicht erreichbar. Du kannst den Standort auf der Karte auswählen.": "Die Adresssuche ist gerade nicht erreichbar. Du kannst den Standort auf der Karte auswählen.",
+  "Keine Adresse in Berlin gefunden. Bitte prüfe die Adresse oder wähle den Standort auf der Karte.": "Keine Adresse in Berlin gefunden. Bitte prüfe die Adresse oder wähle den Standort auf der Karte.",
+  "Möglichen Standort gefunden": "Möglichen Standort gefunden",
+  "Mehrere mögliche Standorte gefunden. Bitte wähle die passende Adresse.": "Mehrere mögliche Standorte gefunden. Bitte wähle die passende Adresse.",
+  "Nur ungefähr: Bitte setze den Marker am richtigen Gebäude.": "Nur ungefähr: Bitte setze den Marker am richtigen Gebäude.",
+  "Auf Karte prüfen": "Auf Karte prüfen",
+  "Bitte prüfe das Gebäude. Du kannst den Marker verschieben oder auf die Karte tippen.": "Bitte prüfe das Gebäude. Du kannst den Marker verschieben oder auf die Karte tippen.",
+  "Standort bestätigen": "Standort bestätigen"
 }

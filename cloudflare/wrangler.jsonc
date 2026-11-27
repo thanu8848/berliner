@@ -4,7 +4,46 @@
   "main": "worker.ts",
   "compatibility_date": "2026-11-26",
   "workers_dev": true,
-  "vars": { "ALLOWED_ORIGINS": "https://thanu8848.github.io" },
-  "ratelimits": [{ "name": "LINK_LIMITER", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } }],
-  "observability": { "enabled": false }
+  "vars": {
+    "ALLOWED_ORIGINS": "https://thanu8848.github.io",
+    "GEOCODER_URL": "https://nominatim.openstreetmap.org/search",
+    "GEOCODER_AGENT": "Berliner/1.0 (+https://thanu8848.github.io/berliner/)"
+  },
+  "ratelimits": [
+    {
+      "name": "LINK_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    },
+    {
+      "name": "GEOCODE_LIMITER",
+      "namespace_id": "1002",
+      "simple": {
+        "limit": 10,
+        "period": 60
+      }
+    }
+  ],
+  "observability": {
+    "enabled": false
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "GEOCODE",
+        "class_name": "AddressGeocoder"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "geocode-v1",
+      "new_sqlite_classes": [
+        "AddressGeocoder"
+      ]
+    }
+  ]
 }

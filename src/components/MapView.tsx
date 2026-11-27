@@ -18,6 +18,7 @@ interface Props {
     places: Place[]
     selection: Location | null
     picking: boolean
+    draggableSelection?: boolean
     onChoosePlace: (place: OsmPlace) => boolean
     onPick: (point: Location) => void
     onEdit: (place: Place) => void
@@ -109,10 +110,14 @@ export default function MapView(props: Props) {
         const map = mapRef.current
         if (!map || !props.selection) return
         const { longitude, latitude } = props.selection
-        const marker = new Marker({ color: '#2563eb' }).setLngLat([longitude, latitude]).addTo(map)
-        map.flyTo({ center: [longitude, latitude], zoom: Math.max(15, map.getZoom()), essential: false })
+        const marker = new Marker({ color: props.draggableSelection ? '#d98a16' : '#2563eb', draggable: props.draggableSelection }).setLngLat([longitude, latitude]).addTo(map)
+        marker.on('dragend', () => {
+            const point = marker.getLngLat()
+            latest.current.onPick({ latitude: point.lat, longitude: point.lng })
+        })
+        map.flyTo({ center: [longitude, latitude], zoom: Math.max(16, map.getZoom()), padding: props.draggableSelection ? { bottom: 230, top: 0, left: 0, right: 0 } : 0, essential: false })
         return () => { marker.remove() }
-    }, [props.selection])
+    }, [props.selection, props.draggableSelection])
     return <>
         <div ref={container} className={`map ${props.picking ? 'is-picking' : ''}`} />
         {targets.length > 0 && !props.picking && <section className="map-place-preview" aria-label={t('Ort auf der Karte')}>

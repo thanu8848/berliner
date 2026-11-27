@@ -1,3 +1,5 @@
+import AddressSearch from './AddressSearch'
+import type { AddressLocation } from '../services/addressLookup'
 import { categoryLabels, statusLabels } from '../data/placeLabels'
 import { translateValidation, clearValidation } from '../i18n'
 import { useTranslation } from 'react-i18next'
@@ -23,6 +25,7 @@ import type {
 
 // Informationen, die App.tsx an das Formular übergibt
 interface PlaceFormProps {
+    onPreviewAddress: (place: AddressLocation, name: string) => void
     active: boolean
     selectedLocation: {
         latitude: number
@@ -45,6 +48,7 @@ interface PlaceFormProps {
 }
 
 function PlaceForm({
+                       onPreviewAddress,
                        active,
                        selectedLocation,
                        editingPlace,
@@ -331,7 +335,7 @@ function PlaceForm({
                 </div>
                 <section className="enrichment">
                     <button type="button" aria-expanded={searchOpen} onClick={() => setSearchOpen(open => !open)}>{t(searchOpen ? 'Suche schließen' : 'Anderen Ort suchen')}</button>
-                    {!searchOpen && !enriched && googleMapsSuggestion && active && <PlaceSearch automatic name={name} address={address} location={formLocation} onSelect={enrichFromCatalog} />}
+                    {!searchOpen && !enriched && googleMapsSuggestion && active && <PlaceSearch automatic fallback={<AddressSearch key={address} address={address} name={name} onPreview={onPreviewAddress} />} name={name} address={address} location={formLocation} onSelect={enrichFromCatalog} />}
                     {enriched && <p role="status">{t('Fehlende Angaben ergänzt. Bitte prüfe die Angaben.')}</p>}
                     {searchOpen && active && <PlaceSearch name={name} location={formLocation} category={categoryChosen ? category : undefined} onSelect={enrichFromCatalog} />}
                 </section>

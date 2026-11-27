@@ -190,5 +190,22 @@
   "Link übernommen. Die Kurzlink-Auflösung ist noch nicht freigeschaltet. Nutze die Suche oder die Karte.": "Link received. Short-link resolution is not enabled yet. Use search or the map.",
   "Link übernommen. Der Ort konnte nicht automatisch erkannt werden. Nutze die Suche oder die Karte.": "Link received. The place could not be identified automatically. Use search or the map.",
   "Link übernommen. Bitte prüfe und vervollständige die Angaben unten.": "Link received. Please check and complete the details below.",
-  "Keine passenden Ergänzungen gefunden. Dein ausgewählter Standort bleibt erhalten.": "No matching details found. Your selected location will be kept."
+  "Keine passenden Ergänzungen gefunden. Dein ausgewählter Standort bleibt erhalten.": "No matching details found. Your selected location will be kept.",
+  "Adresse suchen": "Search address",
+  "Kein Geschäft gefunden? Suche stattdessen nach der Adresse des Gebäudes.": "No business found? Search for the building address instead.",
+  "Bitte ergänze Straße, Hausnummer, Postleitzahl und Berlin im Adressfeld.": "Please enter the street, house number, postcode and Berlin in the address field.",
+  "Adresse wird gesucht …": "Looking up address …",
+  "Standort anhand der Adresse suchen": "Find location from address",
+  "Nur die öffentliche Geschäftsadresse wird an den Adressdienst gesendet. Keine privaten Adressen eingeben.": "Only the public business address is sent to the address service. Do not enter private addresses.",
+  "Die Adresssuche ist noch nicht freigeschaltet. Bitte wähle den Standort auf der Karte.": "Address search is not enabled yet. Please select the location on the map.",
+  "Die Adresssuche ist gerade ausgelastet. Bitte versuche es gleich erneut.": "Address search is busy. Please try again shortly.",
+  "Die Adresssuche dauert zu lange. Bitte versuche es erneut oder wähle den Standort auf der Karte.": "Address search is taking too long. Please retry or select the location on the map.",
+  "Die Adresssuche ist gerade nicht erreichbar. Du kannst den Standort auf der Karte auswählen.": "Address search is unavailable. You can select the location on the map.",
+  "Keine Adresse in Berlin gefunden. Bitte prüfe die Adresse oder wähle den Standort auf der Karte.": "No address found in Berlin. Please check the address or select the location on the map.",
+  "Möglichen Standort gefunden": "Possible location found",
+  "Mehrere mögliche Standorte gefunden. Bitte wähle die passende Adresse.": "Several possible locations found. Please choose the correct address.",
+  "Nur ungefähr: Bitte setze den Marker am richtigen Gebäude.": "Approximate only: please move the marker to the correct building.",
+  "Auf Karte prüfen": "Check on map",
+  "Bitte prüfe das Gebäude. Du kannst den Marker verschieben oder auf die Karte tippen.": "Please check the building. You can drag the marker or tap the map.",
+  "Standort bestätigen": "Confirm location"
 }

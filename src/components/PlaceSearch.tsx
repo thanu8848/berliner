@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { loadCatalog, searchCatalog, matchImportedPlace } from '../services/catalog'
@@ -7,6 +8,7 @@ import type { PlaceCategory } from '../types/place'
 import { categoryLabels } from '../data/placeLabels'
 
 interface Props {
+    fallback?: ReactNode
     automatic?: boolean
     address?: string
     name?: string
@@ -14,7 +16,7 @@ interface Props {
     category?: PlaceCategory
     onSelect: (place: OsmPlace) => void
 }
-export default function PlaceSearch({ name = '', address = '', automatic = false, location, category, onSelect }: Props) {
+export default function PlaceSearch({ name = '', address = '', automatic = false, fallback, location, category, onSelect }: Props) {
     const { t, i18n } = useTranslation()
     const [query, setQuery] = useState(name)
     const [data, setData] = useState<Catalog>()
@@ -60,5 +62,6 @@ export default function PlaceSearch({ name = '', address = '', automatic = false
             </> : <p role="status">{t(automatic ? location ? 'Keine passenden Ergänzungen gefunden. Dein ausgewählter Standort bleibt erhalten.' : 'Kein eindeutiger Treffer gefunden. Du kannst den Standort selbst auf der Karte auswählen.' : query.trim().length >= 2 || location ? 'Keine passenden Orte gefunden. Du kannst manuell fortfahren.' : 'Gib mindestens zwei Zeichen ein.')}</p>}
         </>}
         {automatic && data && results.length > 0 && <small>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></small>}
+        {automatic && !location && !loading && (error || cancelled || (data && !results.length)) && fallback}
     </section>
 }

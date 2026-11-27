@@ -1,3 +1,5 @@
+import type { AddressLocation } from './services/addressLookup'
+import { validLocation } from './services/placeValidation'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './components/LanguageSwitcher'
@@ -48,6 +50,7 @@ export default function App() {
     const [draft, setDraft] = useState<Draft | null>(null)
     const [panelOpen, setPanelOpen] = useState(false)
     const [screen, setScreen] = useState<Screen>('choose')
+    const [addressPreview, setAddressPreview] = useState<(AddressLocation & { name: string }) | null>(null)
     const [picking, setPicking] = useState(false)
     const [googleInput, setGoogleInput] = useState('')
     const [importMessage, setImportMessage] = useState('')
@@ -63,6 +66,7 @@ export default function App() {
     function finishDraft() {
         stopImport()
         setDraft(null)
+        setAddressPreview(null)
         setPicking(false)
         setPanelOpen(false)
         setScreen('choose')
@@ -70,12 +74,15 @@ export default function App() {
         setGoogleInput('')
     }
     function startPicking() {
+        setAddressPreview(null)
         if (!draft) setDraft(emptyDraft())
         setPicking(true)
         setPanelOpen(false)
         setScreen('form')
     }
     function selectLocation(location: Location) {
+        if (!validLocation(location)) return
+        setAddressPreview(null)
         setDraft(current => ({ ...(current ?? emptyDraft()), location }))
         setPicking(false)
         setScreen('form')
@@ -86,6 +93,7 @@ export default function App() {
         openExisting(place)
     }
     function openExisting(place: Place) {
+        setAddressPreview(null)
         stopImport()
         setDraft({ ...emptyDraft(), editing: place, location: { latitude: place.latitude, longitude: place.longitude } })
         setPicking(false)
@@ -159,8 +167,15 @@ export default function App() {
         <header className="app-header"><div><h1>Berliner<span className="brand-dot">.</span></h1><p>{t('Deine Stadt. Deine Lieblingsorte.')}</p></div><LanguageSwitcher /></header>
         {storageError && <p className="storage-error" role="alert">{t('Speichern im Browser fehlgeschlagen. Bitte sichere deine Eingaben, bevor du die Seite schließt.')}</p>}
         <div className="map-stage">
-            <MapView onChoosePlace={chooseCatalog} places={allPlaces} selection={draft?.location ?? null} picking={picking} onPick={selectLocation} onEdit={editPlace} onDelete={deletePlace} />
-            {picking ? <div className="map-pick-card"><strong>{t('Tippe auf den Standort des Ortes.')}</strong><button onClick={() => { setPicking(false); setPanelOpen(true) }}>{t('Zurück zum Formular')}</button></div>
+            <MapView onChoosePlace={chooseCatalog} places={allPlaces} selection={addressPreview ?? draft?.location ?? null} picking={picking || Boolean(addressPreview)} draggableSelection={Boolean(addressPreview)} onPick={point => addressPreview ? setAddressPreview(current => current ? { ...current, ...point } : null) : selectLocation(point)} onEdit={editPlace} onDelete={deletePlace} />
+            {addressPreview ? <div className="map-pick-card address-confirmation">
+                <strong>{t('Möglichen Standort gefunden')}</strong>
+                <span>{addressPreview.name || t('Neuer Ort')} · {addressPreview.address}</span>
+                <small>{t(addressPreview.approximate ? 'Nur ungefähr: Bitte setze den Marker am richtigen Gebäude.' : 'Bitte prüfe das Gebäude. Du kannst den Marker verschieben oder auf die Karte tippen.')}</small>
+                <small>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></small>
+                <button className="primary-button" onClick={() => { if (!draft?.location) selectLocation(addressPreview) }}>{t('Standort bestätigen')}</button>
+                <button onClick={() => { setAddressPreview(null); setPanelOpen(true) }}>{t('Zurück zum Formular')}</button>
+            </div> : picking ? <div className="map-pick-card"><strong>{t('Tippe auf den Standort des Ortes.')}</strong><button onClick={() => { setPicking(false); setPanelOpen(true) }}>{t('Zurück zum Formular')}</button></div>
                 : <button className="add-place-fab" onClick={() => { setScreen(draft ? 'form' : 'choose'); setPanelOpen(true) }}>{t(draft ? 'Eintragung fortsetzen' : '+ Ort hinzufügen')}</button>}
         </div>
         <EditorPanel open={panelOpen} title={panelTitle} onClose={() => { stopImport(); setPanelOpen(false) }}>
@@ -181,7 +196,10 @@ export default function App() {
             {draft && <div hidden={screen !== 'form'}>
                 {storageError && <p role="alert">{t('Speichern im Browser fehlgeschlagen. Bitte sichere deine Eingaben, bevor du die Seite schließt.')}</p>}
                 {importMessage && <p className="import-hint" role="status">{t(importMessage)}</p>}
-                <PlaceForm active={panelOpen && screen === 'form'} key={draft.key} selectedLocation={draft.location} editingPlace={draft.editing} osmSuggestion={draft.suggestion}
+                <PlaceForm onPreviewAddress={(place, name) => {
+                    if (draft.location) return
+                    setAddressPreview({ ...place, name }); setPicking(false); setPanelOpen(false)
+                }} active={panelOpen && screen === 'form'} key={draft.key} selectedLocation={draft.location} editingPlace={draft.editing} osmSuggestion={draft.suggestion}
                     googleMapsSuggestion={draft.googleUrl} googlePlaceName={draft.name} googleAddress={draft.address}
                     allPlaces={allPlaces} onEditExisting={openExisting} onCancelNew={finishDraft} onAddPlace={addPlace}
                     onUpdatePlace={updatePlace} onCancelEdit={finishDraft} onPickLocation={startPicking} onChooseLocation={location => setDraft(current => current ? { ...current, location } : current)} />

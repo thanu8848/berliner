@@ -1,5 +1,8 @@
+import { handleGeocode } from './geocode'
+import type { GeocodeEnv } from './geocode'
+export { AddressGeocoder } from './geocode'
 import { googleMapsUrl, isShortMapsUrl } from '../src/services/googleMapsUrls'
-interface Env {
+interface Env extends GeocodeEnv {
     ALLOWED_ORIGINS: string
     LINK_LIMITER: { limit(options: { key: string }): Promise<{ success: boolean }> }
 }
@@ -30,6 +33,10 @@ export default {
         const allowed = env.ALLOWED_ORIGINS.split(',').map(value => value.trim()).filter(Boolean)
         const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Vary': 'Origin', 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' }
         if (!allowed.includes(origin)) return new Response('Forbidden', { status: 403 })
+        if (new URL(request.url).pathname === '/geocode') {
+            const response = await handleGeocode(request, env)
+            return new Response(response.body, { status: response.status, headers })
+        }
         if (new URL(request.url).pathname !== '/resolve') return new Response('Not found', { status: 404, headers })
         if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers })
         if (request.method !== 'POST') return new Response('Method not allowed', { status: 405, headers })
