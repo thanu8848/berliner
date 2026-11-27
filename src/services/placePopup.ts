@@ -112,20 +112,60 @@ export function createPlacePopup(
         content.append(websiteContainer)
     }
 
+    
     // Navigation mit Google Maps
     const navigation = document.createElement('a')
 
-    const destination = encodeURIComponent(
-        `${place.latitude},${place.longitude}`
-    )
+// Gespeicherten Google-Maps-Link prüfen
+    let googleMapsUrl: string | null = null
 
-    navigation.href =
-        `https://www.google.com/maps/dir/?api=1&destination=${destination}`
+    if (place.googleMapsUrl) {
+        try {
+            const url = new URL(place.googleMapsUrl)
+
+            const host = url.hostname.toLowerCase()
+
+            const isGoogleMaps =
+                url.protocol === 'https:' &&
+                (
+                    host === 'maps.app.goo.gl' ||
+                    (host === 'goo.gl' &&
+                        url.pathname.startsWith('/maps/')) ||
+                    (
+                        [
+                            'google.com',
+                            'www.google.com',
+                            'maps.google.com',
+                            'google.de',
+                            'www.google.de'
+                        ].includes(host) &&
+                        url.pathname.startsWith('/maps')
+                    )
+                )
+
+            if (isGoogleMaps) {
+                googleMapsUrl = url.href
+            }
+        } catch {
+            // Ungültiger Link: andere Navigationsmethode verwenden
+        }
+    }
+
+// Adresse bevorzugen, sonst Koordinaten verwenden
+    const destination =
+        place.address?.trim() ||
+        `${place.latitude},${place.longitude}`
+
+// Navigationsziel festlegen
+    navigation.href = googleMapsUrl ??
+        `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`
 
     navigation.target = '_blank'
     navigation.rel = 'noopener noreferrer'
-    navigation.textContent = t("Route in Google Maps öffnen")
 
+    navigation.textContent = googleMapsUrl
+        ? t('Ort in Google Maps öffnen')
+        : t('Route in Google Maps öffnen')
     const navigationContainer = document.createElement('p')
     navigationContainer.append(navigation)
 
