@@ -112,9 +112,16 @@ export default function App() {
         if (!persistPlaces(allPlaces.filter(existing => existing.id !== place.id))) return
         if (draft?.editing?.id === place.id) finishDraft()
     }
-    function chooseCatalog(place: OsmPlace) {
+    function chooseCatalog(place: OsmPlace): boolean {
+        if ((draft || googleInput.trim()) && !window.confirm(t('Diesen Ort übernehmen? Deine bisherigen, ungespeicherten Eingaben werden dabei verworfen.'))) return false
+        stopImport()
+        setImportMessage('')
+        setGoogleInput('')
+        setPicking(false)
+        setPanelOpen(true)
         setDraft({ ...emptyDraft(), suggestion: place, location: { latitude: place.latitude, longitude: place.longitude } })
         setScreen('form')
+        return true
     }
     async function importGoogle() {
         const original = googleMapsUrl(googleInput)
@@ -152,7 +159,7 @@ export default function App() {
         <header className="app-header"><div><h1>Berliner<span className="brand-dot">.</span></h1><p>{t('Deine Stadt. Deine Lieblingsorte.')}</p></div><LanguageSwitcher /></header>
         {storageError && <p className="storage-error" role="alert">{t('Speichern im Browser fehlgeschlagen. Bitte sichere deine Eingaben, bevor du die Seite schließt.')}</p>}
         <div className="map-stage">
-            <MapView places={allPlaces} selection={draft?.location ?? null} picking={picking} onPick={selectLocation} onEdit={editPlace} onDelete={deletePlace} />
+            <MapView onChoosePlace={chooseCatalog} places={allPlaces} selection={draft?.location ?? null} picking={picking} onPick={selectLocation} onEdit={editPlace} onDelete={deletePlace} />
             {picking ? <div className="map-pick-card"><strong>{t('Tippe auf den Standort des Ortes.')}</strong><button onClick={() => { setPicking(false); setPanelOpen(true) }}>{t('Zurück zum Formular')}</button></div>
                 : <button className="add-place-fab" onClick={() => { setScreen(draft ? 'form' : 'choose'); setPanelOpen(true) }}>{t(draft ? 'Eintragung fortsetzen' : '+ Ort hinzufügen')}</button>}
         </div>

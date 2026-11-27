@@ -168,5 +168,10 @@
   "Optional. Du kannst jederzeit ohne Ergänzung speichern.": "Optional. Du kannst jederzeit ohne Ergänzung speichern.",
   "Fehlende Angaben ergänzt. Bitte prüfe die Angaben.": "Fehlende Angaben ergänzt. Bitte prüfe die Angaben.",
   "Weitere Angaben (optional)": "Weitere Angaben (optional)",
-  "Vorschau": "Vorschau"
+  "Vorschau": "Vorschau",
+  "Ort auf der Karte": "Ort auf der Karte",
+  "Ortsangaben werden geladen …": "Ortsangaben werden geladen …",
+  "Ortskatalog konnte nicht geladen werden. Bitte versuche es erneut.": "Ortskatalog konnte nicht geladen werden. Bitte versuche es erneut.",
+  "Kein passender Katalogeintrag für „{{name}}“. Nutze „Ort selbst hinzufügen“.": "Kein passender Katalogeintrag für „{{name}}“. Nutze „Ort selbst hinzufügen“.",
+  "Diesen Ort übernehmen? Deine bisherigen, ungespeicherten Eingaben werden dabei verworfen.": "Diesen Ort übernehmen? Deine bisherigen, ungespeicherten Eingaben werden dabei verworfen."
 }

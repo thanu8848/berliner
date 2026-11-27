@@ -168,5 +168,10 @@
   "Optional. Du kannst jederzeit ohne Ergänzung speichern.": "Optional. You can save without adding these details.",
   "Fehlende Angaben ergänzt. Bitte prüfe die Angaben.": "Missing details added. Please check them.",
   "Weitere Angaben (optional)": "More details (optional)",
-  "Vorschau": "Preview"
+  "Vorschau": "Preview",
+  "Ort auf der Karte": "Place on the map",
+  "Ortsangaben werden geladen …": "Loading place details …",
+  "Ortskatalog konnte nicht geladen werden. Bitte versuche es erneut.": "Could not load the place catalog. Please try again.",
+  "Kein passender Katalogeintrag für „{{name}}“. Nutze „Ort selbst hinzufügen“.": "No matching catalog entry for “{{name}}”. Use “Add place manually”.",
+  "Diesen Ort übernehmen? Deine bisherigen, ungespeicherten Eingaben werden dabei verworfen.": "Use this place? Your current unsaved changes will be discarded."
 }

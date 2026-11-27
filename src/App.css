@@ -82,3 +82,10 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: #195f4e; }
 }
 @media (min-width: 900px) { .editor-panel { margin: 16px 16px 16px auto; height: calc(var(--keyboard-height, 100dvh) - 32px); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+
+.map-place-preview { position: absolute; z-index: 3; left: 16px; right: 16px; bottom: calc(110px + env(safe-area-inset-bottom)); max-width: 440px; max-height: 45dvh; margin: auto; padding: 16px; overflow-y: auto; overscroll-behavior: contain; background: #fffdf5; border: 1px solid #dce4dc; border-radius: 16px; box-shadow: 0 8px 28px #183c3430; overflow-wrap: anywhere; }
+.map-place-preview-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.map-place-preview-header button { min-width: 44px; min-height: 44px; }
+.map-place-preview-result { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid #dce4dc; }
+.map-place-preview-result span { font-size: 13px; color: #60766c; }
+.map-place-preview a { color: inherit; }
