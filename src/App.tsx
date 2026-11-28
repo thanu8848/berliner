@@ -7,7 +7,6 @@ import EditorPanel from './components/EditorPanel'
 import MapView from './components/MapView'
 import type { Location } from './components/MapView'
 import PlaceForm from './components/PlaceForm'
-import PlaceSearch from './components/PlaceSearch'
 import { places } from './data/places'
 import type { Place } from './types/place'
 import type { OsmPlace } from './services/osm'
@@ -27,7 +26,7 @@ interface Draft {
     address: string
 }
 const emptyDraft = (): Draft => ({ key: crypto.randomUUID(), location: null, editing: null, suggestion: null, googleUrl: null, name: null, address: '' })
-type Screen = 'choose' | 'google' | 'catalog' | 'form'
+type Screen = 'choose' | 'google' | 'form'
 
 export default function App() {
     const { t } = useTranslation()
@@ -162,7 +161,7 @@ export default function App() {
         importRequest.current = null
         setScreen('form')
     }
-    const panelTitle = screen === 'choose' ? t('Ort hinzufügen') : screen === 'google' ? t('Mit Google Maps hinzufügen') : screen === 'catalog' ? t('Berliner Ortskatalog') : t(draft?.editing ? 'Ort bearbeiten' : 'Angaben prüfen')
+    const panelTitle = screen === 'choose' ? t('Ort hinzufügen') : screen === 'google' ? t('Mit Google Maps hinzufügen') : t(draft?.editing ? 'Ort bearbeiten' : 'Angaben prüfen')
     return <main className="app">
         <header className="app-header"><div><h1>Berliner<span className="brand-dot">.</span></h1><p>{t('Deine Stadt. Deine Lieblingsorte.')}</p></div><LanguageSwitcher /></header>
         {storageError && <p className="storage-error" role="alert">{t('Speichern im Browser fehlgeschlagen. Bitte sichere deine Eingaben, bevor du die Seite schließt.')}</p>}
@@ -180,9 +179,9 @@ export default function App() {
         </div>
         <EditorPanel open={panelOpen} title={panelTitle} onClose={() => { stopImport(); setPanelOpen(false) }}>
             {screen === 'choose' && <div className="entry-options"><p className="panel-intro">{t('Wie möchtest du den Ort hinzufügen?')}</p>
-                <button className="entry-option" onClick={() => setScreen('google')}><strong>{t('Mit Google Maps hinzufügen')}</strong><span>{t('Teilen-Link einfügen und Angaben prüfen')}</span></button>
-                <button className="entry-option" onClick={startPicking}><strong>{t('Ort selbst hinzufügen')}</strong><span>{t('Standort auf der Karte auswählen')}</span></button>
-                <button className="entry-option" onClick={() => setScreen('catalog')}><strong>{t('Im Berliner Ortskatalog suchen')}</strong><span>{t('Restaurants, Cafés und Bars direkt finden')}</span></button>
+                <button className="entry-option" onClick={() => setScreen('google')}><strong>{t('Google-Maps-Link einfügen')}</strong><span>{t('Teilen-Link einfügen und Angaben prüfen')}</span></button>
+                <button className="entry-option" onClick={startPicking}><strong>{t('Standort selbst markieren')}</strong><span>{t('Standort auf der Karte auswählen')}</span></button>
+                <p className="panel-intro">{t('Vorhandene Geschäfte kannst du direkt auf der Karte antippen und übernehmen.')}</p>
                 <small>{t('Deine Einträge bleiben vorerst in diesem Browser gespeichert.')}</small>
             </div>}
             {screen === 'google' && <section className="google-import"><p>{t('Kopiere den Link über „Teilen“ in Google Maps und füge ihn hier ein.')}</p>
@@ -192,10 +191,9 @@ export default function App() {
                 {importing && <button onClick={stopImport}>{t('Abbrechen')}</button>}
                 <button className="text-button" onClick={() => { stopImport(); setScreen('choose') }}>{t('Andere Methode wählen')}</button>
             </section>}
-            {screen === 'catalog' && panelOpen && <><PlaceSearch onSelect={chooseCatalog} /><button className="text-button" onClick={startPicking}>{t('Stattdessen auf der Karte auswählen')}</button></>}
             {draft && <div hidden={screen !== 'form'}>
                 {storageError && <p role="alert">{t('Speichern im Browser fehlgeschlagen. Bitte sichere deine Eingaben, bevor du die Seite schließt.')}</p>}
-                {importMessage && <p className="import-hint" role="status">{t(importMessage)}</p>}
+                {importMessage && !draft.location && <p className="import-hint" role="status">{t(importMessage)}</p>}
                 <PlaceForm onPreviewAddress={(place, name) => {
                     if (draft.location) return
                     setAddressPreview({ ...place, name }); setPicking(false); setPanelOpen(false)

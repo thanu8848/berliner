@@ -147,6 +147,9 @@ function PlaceForm({
 
     // The parent owns coordinates, so returning to the map never remounts this form.
     const formLocation = validLocation(selectedLocation) ? selectedLocation : null
+    const [catalogBusy, setCatalogBusy] = useState(true)
+    const [saveAttempted, setSaveAttempted] = useState(false)
+    const [addressSearch, setAddressSearch] = useState<{ address: string; busy: boolean } | null>(null)
     const autoAddress = Boolean(googleMapsSuggestion) && shouldAutoLookup(googleAddress, address, Boolean(formLocation))
     const [boundaries, setBoundaries] = useState<Boundary[]>()
     const [boundaryError, setBoundaryError] = useState(false)
@@ -158,6 +161,8 @@ function PlaceForm({
             .catch(() => { if (!cancelled) setBoundaryError(true) })
         return () => { cancelled = true }
     }, [hasLocation])
+    const resolving = active && ((!searchOpen && !enriched && !hasLocation && (autoAddress ? addressSearch?.address !== address || addressSearch.busy : Boolean(googleMapsSuggestion) && catalogBusy)) || (hasLocation && !boundaries && !boundaryError))
+    const showErrors = saveAttempted || !resolving
     const detected = boundaries && formLocation ? locateNeighborhood(boundaries, formLocation) : null
     const automaticNeighborhood = detected && !detected.uncertain ? detected.name : null
     const neighborhood = neighborhoodInput ?? automaticNeighborhood ?? ''
@@ -208,6 +213,7 @@ function PlaceForm({
     // Formular speichern
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
+        setSaveAttempted(true)
 
         // Pflichtfelder prüfen
         if (!formLocation || missing.length || !district) {
@@ -275,6 +281,7 @@ function PlaceForm({
                 className="place-form-content"
                 onSubmit={handleSubmit}
                 onInvalidCapture={event => {
+                    setSaveAttempted(true)
                     const field = event.target as HTMLElement
                     const details = field.closest('details')
                     if (details) details.open = true
@@ -339,16 +346,16 @@ function PlaceForm({
                         </select>
                     </label>
 
-                    <label>{t('Adresse (optional)')}<input value={address} onChange={event => setAddress(event.target.value)} placeholder={t('Straße, Hausnummer, Postleitzahl')} /></label>
 
                     <NeighborhoodInput
                         required={!editingPlace?.district}
+                        showValidation={showErrors}
                         value={neighborhood}
                         onChange={setNeighborhood}
                     />
 
                 </div>
-                {formLocation && <small className="neighborhood-detection" role="status">
+                {formLocation && (!detected || detected.uncertain || neighborhood !== detected.name) && <small className="neighborhood-detection" role="status">
                     {boundaryError ? t('Ortsteil konnte nicht automatisch bestimmt werden. Bitte wähle ihn selbst aus.')
                         : !detected ? t('Ortsteil wird ermittelt …')
                         : detected.uncertain ? t('Standort nahe einer Grenze oder nicht eindeutig zuordenbar. Bitte prüfe den Ortsteil.')
@@ -358,16 +365,15 @@ function PlaceForm({
                     {automaticNeighborhood && neighborhood !== automaticNeighborhood && <button type="button" onClick={() => setNeighborhoodInput(automaticNeighborhood)}>{t('Erkannten Ortsteil übernehmen')}</button>}
                 </small>}
 
-                <div className="location-summary" aria-describedby={!formLocation ? `${hintId}-location` : undefined}>
-                    <span>{t(formLocation ? 'Standort ausgewählt' : 'Noch kein Standort ausgewählt')}</span>
+                <div className="location-summary" aria-describedby={!formLocation && showErrors ? `${hintId}-location` : undefined}>
+                    <span>{googleMapsSuggestion && formLocation ? <><strong>{name}</strong>{address && <span>{address}</span>}{neighborhood && <span>{neighborhood}</span>}</> : t(resolving ? 'Standort wird ermittelt …' : formLocation ? 'Standort ausgewählt' : 'Noch kein Standort ausgewählt')}</span>
                     <button type="button" onClick={onPickLocation}>{t(formLocation ? 'Standort ändern' : 'Standort auf Karte auswählen')}</button>
-                    {formLocation && automaticallyLocated && <small role="status">{t('Standort anhand der Adresse übernommen. Bei Bedarf kannst du ihn ändern.')}</small>}
-                    {!formLocation && <p id={`${hintId}-location`} className="field-hint" role="status">{t('Der Standort fehlt noch. Bitte wähle den Ort auf der Karte oder über die Suche.')}</p>}
+                    {!formLocation && showErrors && <p id={`${hintId}-location`} className="field-hint" role="status">{t('Der Standort fehlt noch. Bitte wähle den Ort auf der Karte oder über die Suche.')}</p>}
                 </div>
                 <section className="enrichment">
-                    <button type="button" aria-expanded={searchOpen} onClick={() => setSearchOpen(open => !open)}>{t(searchOpen ? 'Suche schließen' : 'Anderen Ort suchen')}</button>
-                    {!searchOpen && !enriched && googleMapsSuggestion && active && !autoAddress && <PlaceSearch automatic fallback={<AddressSearch key={address} address={address} name={name} onPreview={onPreviewAddress} />} name={name} address={address} location={formLocation} onSelect={enrichFromCatalog} />}
-                    {!searchOpen && !enriched && autoAddress && active && <AddressSearch key={address} automatic address={address} name={name} onPreview={onPreviewAddress} onAutoAccept={place => {
+                    <button type="button" aria-expanded={searchOpen} onClick={() => setSearchOpen(open => !open)}>{t(searchOpen ? 'Suche schließen' : 'Ort suchen')}</button>
+                    {!searchOpen && !enriched && !formLocation && googleMapsSuggestion && active && !autoAddress && <PlaceSearch automatic onSearchingChange={setCatalogBusy} fallback={<AddressSearch key={address} address={address} name={name} onPreview={onPreviewAddress} />} name={name} address={address} location={formLocation} onSelect={enrichFromCatalog} />}
+                    {!searchOpen && !enriched && autoAddress && active && <AddressSearch key={address} automatic onSearchingChange={busy => setAddressSearch({ address, busy })} address={address} name={name} onPreview={onPreviewAddress} onAutoAccept={place => {
                         if (active && !formLocation && shouldAutoLookup(googleAddress, address, false)) {
                             setAutomaticallyLocated(true)
                             setEnriched(true)
@@ -378,6 +384,7 @@ function PlaceForm({
                     {searchOpen && active && <PlaceSearch name={name} location={formLocation} category={categoryChosen ? category : undefined} onSelect={enrichFromCatalog} />}
                 </section>
                 <details className="extra-fields"><summary>{t('Weitere Angaben (optional)')}</summary>
+                    <label>{t('Adresse (optional)')}<input value={address} onChange={event => setAddress(event.target.value)} placeholder={t('Straße, Hausnummer, Postleitzahl')} /></label>
                     <label>
                         {t("Küche / Angebot")}
                         <input
@@ -596,15 +603,14 @@ function PlaceForm({
 
                 <div className="form-actions">
 
-                {missing.length > 0 && <div id={`${hintId}-missing`} className="validation-summary" role="status">
+                {saveAttempted && missing.length > 0 && <div id={`${hintId}-missing`} className="validation-summary" role="status">
                     <strong>{t('Zum Speichern fehlt noch:')}</strong>
                     <ul>{missing.map(message => <li key={message}>{t(message)}</li>)}</ul>
                 </div>}
                 <button
                     type="submit"
                     className="save-place-button"
-                    disabled={missing.length > 0}
-                    aria-describedby={missing.length ? `${hintId}-missing` : undefined}
+                    aria-describedby={saveAttempted && missing.length ? `${hintId}-missing` : undefined}
                 >
                     {editingPlace
                         ? t("Änderungen speichern")

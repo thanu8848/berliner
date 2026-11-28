@@ -23,3 +23,16 @@ export function automaticLocation(results: AddressLocation[], requestedAddress: 
     const first = results[0]
     return results.every(place => place.latitude === first.latitude && place.longitude === first.longitude) ? first : null
 }
+
+export function groupAddressCandidates(results: AddressLocation[]): AddressLocation[] {
+    const seen = new Set<string>()
+    return results.filter(place => {
+        const verified = place.verifiedAddress && berlinAddress(place.verifiedAddress)
+        if (place.approximate || !verified || !insideBerlin(place.latitude, place.longitude)) return true
+        const key = JSON.stringify([verified.toLocaleLowerCase('de-DE'), place.latitude, place.longitude,
+            place.address.trim().replace(/\s+/g, ' ').toLocaleLowerCase('de-DE')])
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+    })
+}

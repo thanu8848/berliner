@@ -219,5 +219,10 @@
   "Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte.": "Suggested neighborhood: {{name}}. Please check and confirm the location on the map first.",
   "Wir prüfen die importierte Adresse. Eindeutige Standorte werden übernommen; andere prüfst du auf der Karte.": "We are checking the imported address. Unambiguous locations are used automatically; others need a map check.",
   "Standort ändern": "Change location",
-  "Standort anhand der Adresse übernommen. Bei Bedarf kannst du ihn ändern.": "Location taken from the address. You can change it if needed."
+  "Standort anhand der Adresse übernommen. Bei Bedarf kannst du ihn ändern.": "Location taken from the address. You can change it if needed.",
+  "Google-Maps-Link einfügen": "Paste Google Maps link",
+  "Standort selbst markieren": "Mark location yourself",
+  "Vorhandene Geschäfte kannst du direkt auf der Karte antippen und übernehmen.": "Tap existing businesses directly on the map to add them.",
+  "Standort wird ermittelt …": "Finding location …",
+  "Weitere Standortvorschläge anzeigen": "Show more location suggestions"
 }

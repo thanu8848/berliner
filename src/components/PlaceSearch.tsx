@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { loadCatalog, searchCatalog, matchImportedPlace } from '../services/catalog'
 import type { Catalog } from '../services/catalog'
@@ -8,6 +8,7 @@ import type { PlaceCategory } from '../types/place'
 import { categoryLabels } from '../data/placeLabels'
 
 interface Props {
+    onSearchingChange?: (busy: boolean) => void
     fallback?: ReactNode
     automatic?: boolean
     address?: string
@@ -16,7 +17,7 @@ interface Props {
     category?: PlaceCategory
     onSelect: (place: OsmPlace) => void
 }
-export default function PlaceSearch({ name = '', address = '', automatic = false, fallback, location, category, onSelect }: Props) {
+export default function PlaceSearch({ name = '', address = '', automatic = false, fallback, onSearchingChange, location, category, onSelect }: Props) {
     const { t, i18n } = useTranslation()
     const [query, setQuery] = useState(name)
     const [data, setData] = useState<Catalog>()
@@ -24,6 +25,9 @@ export default function PlaceSearch({ name = '', address = '', automatic = false
     const [loading, setLoading] = useState(true)
     const [attempt, setAttempt] = useState(0)
     const [cancelled, setCancelled] = useState(false)
+    const searching = useRef(onSearchingChange)
+    useEffect(() => { searching.current = onSearchingChange }, [onSearchingChange])
+    useEffect(() => { searching.current?.(loading && !cancelled) }, [loading, cancelled])
     const [override, setOverride] = useState<PlaceCategory | 'all' | 'auto'>('auto')
     useEffect(() => {
         if (cancelled) return

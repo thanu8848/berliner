@@ -130,3 +130,6 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: #195f4e; }
 }
 .neighborhood-detection { display: block; margin-top: 12px; line-height: 1.5; }
 .neighborhood-detection button { display: block; margin-top: 8px; }
+
+.location-summary > span { min-width: 0; overflow-wrap: anywhere; }
+.location-summary > span > span { display: block; font-size: .9rem; }

@@ -4,12 +4,13 @@ import { getDistrictForNeighborhood } from '../data/berlinOrtsteile'
 import { suggestNeighborhoods } from '../services/neighborhoodSearch'
 
 interface Props {
+    showValidation?: boolean
     required?: boolean
     value: string
     onChange: (value: string) => void
 }
 
-export default function NeighborhoodInput({ value, onChange, required = true }: Props) {
+export default function NeighborhoodInput({ value, onChange, required = true, showValidation = true }: Props) {
     const { t } = useTranslation()
     const id = useId()
     const [open, setOpen] = useState(false)
@@ -31,7 +32,7 @@ export default function NeighborhoodInput({ value, onChange, required = true }: 
                 id={id}
                 role="combobox"
                 aria-autocomplete="list"
-                aria-invalid={!valid && (required || Boolean(value))}
+                aria-invalid={showValidation && !valid && (required || Boolean(value))}
                 aria-expanded={expanded}
                 aria-controls={expanded ? `${id}-list` : undefined}
                 aria-activedescendant={expanded && active >= 0 ? `${id}-option-${active}` : undefined}
@@ -84,8 +85,8 @@ export default function NeighborhoodInput({ value, onChange, required = true }: 
                     ))}
                 </ul>
             )}
-            <small id={`${id}-hint`} className={!valid && (required || value) ? 'field-hint' : undefined} aria-live="polite">
-                {valid ? t("Gültiger Ortsteil ausgewählt.")
+            <small id={`${id}-hint`} className={showValidation && !valid && (required || value) ? 'field-hint' : undefined} aria-live="polite">
+                {!showValidation && !valid ? t("Ortsteil wird ermittelt …") : valid ? t("Gültiger Ortsteil ausgewählt.")
                     : value.trim() && suggestions.length === 0
                         ? t("Kein passender Ortsteil gefunden. Bitte prüfe die Schreibweise.")
                         : !required && !value ? t("Optional. Der bisherige Bezirk bleibt erhalten.") : t("Bitte wähle einen gültigen Ortsteil aus den Vorschlägen.")}

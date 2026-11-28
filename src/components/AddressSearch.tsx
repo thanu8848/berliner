@@ -1,19 +1,21 @@
 import { loadBoundaries } from '../services/neighborhoodBoundaries'
 import type { Boundary } from '../services/neighborhoodBoundaries'
-import { suggestedNeighborhood, automaticLocation } from '../services/importLocationSuggestion'
+import { suggestedNeighborhood, automaticLocation, groupAddressCandidates } from '../services/importLocationSuggestion'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { berlinAddress, geocodeEndpoint, lookupAddress } from '../services/addressLookup'
 import type { AddressLocation } from '../services/addressLookup'
 
-interface Props { onAutoAccept?: (place: AddressLocation) => void; automatic?: boolean; address: string; name: string; onPreview: (place: AddressLocation, name: string) => void }
-export default function AddressSearch({ automatic = false, address, name, onPreview, onAutoAccept }: Props) {
+interface Props { onSearchingChange?: (busy: boolean) => void; onAutoAccept?: (place: AddressLocation) => void; automatic?: boolean; address: string; name: string; onPreview: (place: AddressLocation, name: string) => void }
+export default function AddressSearch({ automatic = false, address, name, onPreview, onAutoAccept, onSearchingChange }: Props) {
     const { t } = useTranslation()
     const [results, setResults] = useState<AddressLocation[] | null>(null)
     const [loading, setLoading] = useState(() => automatic && Boolean(berlinAddress(address)))
     const [error, setError] = useState('')
     const request = useRef<AbortController | null>(null)
     const normalized = berlinAddress(address)
+    const searching = useRef(onSearchingChange)
+    useEffect(() => { searching.current = onSearchingChange }, [onSearchingChange])
     const accept = useRef(onAutoAccept)
     useEffect(() => { accept.current = onAutoAccept }, [onAutoAccept])
     useEffect(() => () => { request.current?.abort(); request.current = null }, [])
@@ -21,13 +23,14 @@ export default function AddressSearch({ automatic = false, address, name, onPrev
         request.current?.abort()
         const controller = new AbortController()
         request.current = controller
+        searching.current?.(true)
         setLoading(true); setError(''); setResults(null)
         try {
             const found = await lookupAddress(address, geocodeEndpoint(import.meta.env.VITE_MAPS_RESOLVER_URL), controller.signal)
             if (!controller.signal.aborted && request.current === controller) {
                 const location = automatic ? automaticLocation(found, address) : null
                 if (location && accept.current) accept.current(location)
-                else setResults(found)
+                else setResults(groupAddressCandidates(found))
             }
         } catch (reason) {
             if (request.current !== controller) return
@@ -36,7 +39,7 @@ export default function AddressSearch({ automatic = false, address, name, onPrev
                 : code === 'busy' ? 'Die Adresssuche ist gerade ausgelastet. Bitte versuche es gleich erneut.'
                 : code === 'timeout' ? 'Die Adresssuche dauert zu lange. Bitte versuche es erneut oder wähle den Standort auf der Karte.'
                 : 'Die Adresssuche ist gerade nicht erreichbar. Du kannst den Standort auf der Karte auswählen.')
-        } finally { if (request.current === controller) setLoading(false) }
+        } finally { if (request.current === controller) { setLoading(false); searching.current?.(false) } }
     }, [address, automatic])
     useEffect(() => {
         let cancelled = false
@@ -52,23 +55,27 @@ export default function AddressSearch({ automatic = false, address, name, onPrev
         return () => { cancelled = true }
     }, [singleReliable])
     const neighborhoodSuggestion = results && boundaries ? suggestedNeighborhood(results, boundaries) : null
+    const renderCandidate = (place: AddressLocation, index: number) => <li className="catalog-result" key={`${place.latitude}:${place.longitude}:${index}`}>
+                <strong>{name || t('Neuer Ort')}</strong><span>{place.address}</span>
+                {place.approximate && <small>{t('Nur ungefähr: Bitte setze den Marker am richtigen Gebäude.')}</small>}
+                <button type="button" onClick={() => onPreview(place, name)}>{t('Auf Karte prüfen')}</button>
+            </li>
     return <section className="address-search" aria-label={t('Adresse suchen')}>
         <p>{t(automatic ? 'Wir prüfen die importierte Adresse. Eindeutige Standorte werden übernommen; andere prüfst du auf der Karte.' : 'Kein Geschäft gefunden? Suche stattdessen nach der Adresse des Gebäudes.')}</p>
         {!normalized && <p role="status">{t('Bitte ergänze Straße, Hausnummer, Postleitzahl und Berlin im Adressfeld.')}</p>}
         {(!automatic || error || (!loading && results === null)) && <button type="button" disabled={!normalized || loading} onClick={() => void search()}>{t(loading ? 'Adresse wird gesucht …' : 'Standort anhand der Adresse suchen')}</button>}
         <small>{t('Nur die öffentliche Geschäftsadresse wird an den Adressdienst gesendet. Keine privaten Adressen eingeben.')} · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a></small>
         {loading && <p role="status">{t('Adresse wird gesucht …')}</p>}
-        {loading && <button type="button" onClick={() => { request.current?.abort(); request.current = null; setLoading(false) }}>{t('Suche abbrechen')}</button>}
+        {loading && <button type="button" onClick={() => { request.current?.abort(); request.current = null; setLoading(false); searching.current?.(false) }}>{t('Suche abbrechen')}</button>}
         {error && <p role="status">{t(error)}</p>}
         {results?.length === 0 && <p role="status">{t('Keine Adresse in Berlin gefunden. Bitte prüfe die Adresse oder wähle den Standort auf der Karte.')}</p>}
         {results && results.length > 0 && <>
             <p role="status">{t(results.length === 1 ? 'Möglichen Standort gefunden' : 'Mehrere mögliche Standorte gefunden. Bitte wähle die passende Adresse.')}</p>
             {neighborhoodSuggestion && <p className="import-hint" role="status">{t('Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte.', { name: neighborhoodSuggestion })}</p>}
-            <ul className="catalog-results">{results.map((place, index) => <li className="catalog-result" key={`${place.latitude}:${place.longitude}:${index}`}>
-                <strong>{name || t('Neuer Ort')}</strong><span>{place.address}</span>
-                {place.approximate && <small>{t('Nur ungefähr: Bitte setze den Marker am richtigen Gebäude.')}</small>}
-                <button type="button" onClick={() => onPreview(place, name)}>{t('Auf Karte prüfen')}</button>
-            </li>)}</ul>
+            <ul className="catalog-results">{results.slice(0, 1).map(renderCandidate)}</ul>
+            {results.length > 1 && <details><summary>{t('Weitere Standortvorschläge anzeigen')}</summary>
+                <ul className="catalog-results">{results.slice(1).map(renderCandidate)}</ul>
+            </details>}
         </>}
     </section>
 }
