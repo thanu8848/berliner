@@ -202,7 +202,7 @@ export default function App() {
                 }} active={panelOpen && screen === 'form'} key={draft.key} selectedLocation={draft.location} editingPlace={draft.editing} osmSuggestion={draft.suggestion}
                     googleMapsSuggestion={draft.googleUrl} googlePlaceName={draft.name} googleAddress={draft.address}
                     allPlaces={allPlaces} onEditExisting={openExisting} onCancelNew={finishDraft} onAddPlace={addPlace}
-                    onUpdatePlace={updatePlace} onCancelEdit={finishDraft} onPickLocation={startPicking} onChooseLocation={location => setDraft(current => current ? { ...current, location } : current)} />
+                    onUpdatePlace={updatePlace} onCancelEdit={finishDraft} onPickLocation={startPicking} onChooseLocation={location => setDraft(current => current ? { ...current, location: current.location ?? location } : current)} />
             </div>}
         </EditorPanel>
     </main>

@@ -3,6 +3,7 @@ export interface AddressLocation {
     longitude: number
     address: string
     approximate: boolean
+    verifiedAddress?: string
 }
 
 // Only complete public Berlin street addresses are sent to the provider.
@@ -54,7 +55,7 @@ export function lookupAddress(address: string, endpoint: string | null, signal: 
     const normalized = berlinAddress(address)
     if (!normalized) return Promise.reject(new Error('incomplete'))
     if (!endpoint) return Promise.reject(new Error('unconfigured'))
-    const key = endpoint + '|' + normalized.toLocaleLowerCase('de-DE')
+    const key = 'address-v3|' + endpoint + '|' + normalized.toLocaleLowerCase('de-DE')
     const cached = addressCache.get(key)
     if (cached && cached.until > Date.now()) return Promise.resolve(cached.results)
     let entry = addressRequests.get(key)

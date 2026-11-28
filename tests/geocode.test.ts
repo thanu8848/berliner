@@ -112,6 +112,8 @@ test('Marienburger Straße: exact address first, wrong buildings excluded, incom
     const matches = nominatimResults([changed({house_number:undefined}), changed({house_number:'27-29'}), exact, changed({postcode:undefined})], requested)
     assert.equal(matches.length, 4)
     assert.equal(matches[0].approximate, false)
+    assert.equal(matches[0].verifiedAddress?.toLowerCase(), 'marienburger straße 29, 10405 berlin')
+    assert.ok(matches.slice(1).every(p => p.verifiedAddress === undefined))
     assert.ok(matches.slice(1).every(p => p.approximate))
     assert.equal(nominatimResults([changed({house_number:'29 A'})], 'Marienburger Straße 29a, 10405 Berlin')[0].approximate, false)
 })

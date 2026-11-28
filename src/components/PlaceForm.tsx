@@ -87,6 +87,7 @@ function PlaceForm({
     const [searchOpen, setSearchOpen] = useState(false)
     const [address, setAddress] = useState(editingPlace?.address ?? osmSuggestion?.address ?? googleAddress)
     const [enriched, setEnriched] = useState(false)
+    const [automaticallyLocated, setAutomaticallyLocated] = useState(false)
 
 
     const [cuisine, setCuisine] = useState(
@@ -359,14 +360,21 @@ function PlaceForm({
 
                 <div className="location-summary" aria-describedby={!formLocation ? `${hintId}-location` : undefined}>
                     <span>{t(formLocation ? 'Standort ausgewählt' : 'Noch kein Standort ausgewählt')}</span>
-                    <button type="button" onClick={onPickLocation}>{t(formLocation ? 'Auf Karte ändern' : 'Standort auf Karte auswählen')}</button>
+                    <button type="button" onClick={onPickLocation}>{t(formLocation ? 'Standort ändern' : 'Standort auf Karte auswählen')}</button>
+                    {formLocation && automaticallyLocated && <small role="status">{t('Standort anhand der Adresse übernommen. Bei Bedarf kannst du ihn ändern.')}</small>}
                     {!formLocation && <p id={`${hintId}-location`} className="field-hint" role="status">{t('Der Standort fehlt noch. Bitte wähle den Ort auf der Karte oder über die Suche.')}</p>}
                 </div>
                 <section className="enrichment">
                     <button type="button" aria-expanded={searchOpen} onClick={() => setSearchOpen(open => !open)}>{t(searchOpen ? 'Suche schließen' : 'Anderen Ort suchen')}</button>
                     {!searchOpen && !enriched && googleMapsSuggestion && active && !autoAddress && <PlaceSearch automatic fallback={<AddressSearch key={address} address={address} name={name} onPreview={onPreviewAddress} />} name={name} address={address} location={formLocation} onSelect={enrichFromCatalog} />}
-                    {!searchOpen && !enriched && autoAddress && active && <AddressSearch key={address} automatic address={address} name={name} onPreview={onPreviewAddress} />}
-                    {enriched && <p role="status">{t('Fehlende Angaben ergänzt. Bitte prüfe die Angaben.')}</p>}
+                    {!searchOpen && !enriched && autoAddress && active && <AddressSearch key={address} automatic address={address} name={name} onPreview={onPreviewAddress} onAutoAccept={place => {
+                        if (active && !formLocation && shouldAutoLookup(googleAddress, address, false)) {
+                            setAutomaticallyLocated(true)
+                            setEnriched(true)
+                            onChooseLocation({ latitude: place.latitude, longitude: place.longitude })
+                        }
+                    }} />}
+                    {enriched && !automaticallyLocated && <p role="status">{t('Fehlende Angaben ergänzt. Bitte prüfe die Angaben.')}</p>}
                     {searchOpen && active && <PlaceSearch name={name} location={formLocation} category={categoryChosen ? category : undefined} onSelect={enrichFromCatalog} />}
                 </section>
                 <details className="extra-fields"><summary>{t('Weitere Angaben (optional)')}</summary>

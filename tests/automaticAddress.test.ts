@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { shouldAutoLookup, suggestedNeighborhood } from '../src/services/importLocationSuggestion'
+import { shouldAutoLookup, suggestedNeighborhood, automaticLocation } from '../src/services/importLocationSuggestion'
 import { lookupAddress } from '../src/services/addressLookup'
 const boundaries = JSON.parse(readFileSync('public/boundaries/ortsteile-2026-11-28.json','utf8'))
 const address = 'Marienburger Str. 29, 10405 Berlin'
@@ -56,4 +56,13 @@ test('new import cancels old request and never reuses the other address result',
         assert.equal(firstSignal?.aborted,true)
         assert.deepEqual(await lookupAddress('Marienburger Straße 30, 10405 Berlin','https://sequential.test/geocode',new AbortController().signal),[])
     } finally {globalThis.fetch=previous}
+})
+
+test('automatic acceptance requires verified complete address and a single exact coordinate pair', () => {
+    const verified = { ...exact, verifiedAddress: 'Marienburger Straße 29, 10405 Berlin' }
+    assert.deepEqual(automaticLocation([verified],address),verified)
+    assert.deepEqual(automaticLocation([verified,{...verified,address:'Different business in the same building'}],address),verified)
+    for(const results of [[],[exact],[{...verified,approximate:true}],[{...verified,verifiedAddress:'Marienburger Straße 30, 10405 Berlin'}],[verified,{...verified,longitude:verified.longitude+.00001}],[verified,{...verified,approximate:true}],[{...verified,latitude:NaN}]]) {
+        assert.equal(automaticLocation(results,address),null)
+    }
 })

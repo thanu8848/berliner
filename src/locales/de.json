@@ -216,5 +216,8 @@
   "Erkannten Ortsteil übernehmen": "Erkannten Ortsteil übernehmen",
   "Ort in Google Maps öffnen": "Ort in Google Maps öffnen",
   "Wir prüfen die importierte Adresse. Der Standort muss anschließend bestätigt werden.": "Wir prüfen die importierte Adresse. Der Standort muss anschließend bestätigt werden.",
-  "Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte.": "Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte."
+  "Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte.": "Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte.",
+  "Wir prüfen die importierte Adresse. Eindeutige Standorte werden übernommen; andere prüfst du auf der Karte.": "Wir prüfen die importierte Adresse. Eindeutige Standorte werden übernommen; andere prüfst du auf der Karte.",
+  "Standort ändern": "Standort ändern",
+  "Standort anhand der Adresse übernommen. Bei Bedarf kannst du ihn ändern.": "Standort anhand der Adresse übernommen. Bei Bedarf kannst du ihn ändern."
 }

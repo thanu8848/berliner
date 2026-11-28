@@ -1,19 +1,21 @@
 import { loadBoundaries } from '../services/neighborhoodBoundaries'
 import type { Boundary } from '../services/neighborhoodBoundaries'
-import { suggestedNeighborhood } from '../services/importLocationSuggestion'
+import { suggestedNeighborhood, automaticLocation } from '../services/importLocationSuggestion'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { berlinAddress, geocodeEndpoint, lookupAddress } from '../services/addressLookup'
 import type { AddressLocation } from '../services/addressLookup'
 
-interface Props { automatic?: boolean; address: string; name: string; onPreview: (place: AddressLocation, name: string) => void }
-export default function AddressSearch({ automatic = false, address, name, onPreview }: Props) {
+interface Props { onAutoAccept?: (place: AddressLocation) => void; automatic?: boolean; address: string; name: string; onPreview: (place: AddressLocation, name: string) => void }
+export default function AddressSearch({ automatic = false, address, name, onPreview, onAutoAccept }: Props) {
     const { t } = useTranslation()
     const [results, setResults] = useState<AddressLocation[] | null>(null)
     const [loading, setLoading] = useState(() => automatic && Boolean(berlinAddress(address)))
     const [error, setError] = useState('')
     const request = useRef<AbortController | null>(null)
     const normalized = berlinAddress(address)
+    const accept = useRef(onAutoAccept)
+    useEffect(() => { accept.current = onAutoAccept }, [onAutoAccept])
     useEffect(() => () => { request.current?.abort(); request.current = null }, [])
     const search = useCallback(async () => {
         request.current?.abort()
@@ -22,7 +24,11 @@ export default function AddressSearch({ automatic = false, address, name, onPrev
         setLoading(true); setError(''); setResults(null)
         try {
             const found = await lookupAddress(address, geocodeEndpoint(import.meta.env.VITE_MAPS_RESOLVER_URL), controller.signal)
-            if (!controller.signal.aborted) setResults(found)
+            if (!controller.signal.aborted && request.current === controller) {
+                const location = automatic ? automaticLocation(found, address) : null
+                if (location && accept.current) accept.current(location)
+                else setResults(found)
+            }
         } catch (reason) {
             if (request.current !== controller) return
             const code = controller.signal.aborted ? 'timeout' : reason instanceof Error ? reason.message : ''
@@ -31,7 +37,7 @@ export default function AddressSearch({ automatic = false, address, name, onPrev
                 : code === 'timeout' ? 'Die Adresssuche dauert zu lange. Bitte versuche es erneut oder wähle den Standort auf der Karte.'
                 : 'Die Adresssuche ist gerade nicht erreichbar. Du kannst den Standort auf der Karte auswählen.')
         } finally { if (request.current === controller) setLoading(false) }
-    }, [address])
+    }, [address, automatic])
     useEffect(() => {
         let cancelled = false
         queueMicrotask(() => { if (!cancelled && automatic && normalized) void search() })
@@ -47,7 +53,7 @@ export default function AddressSearch({ automatic = false, address, name, onPrev
     }, [singleReliable])
     const neighborhoodSuggestion = results && boundaries ? suggestedNeighborhood(results, boundaries) : null
     return <section className="address-search" aria-label={t('Adresse suchen')}>
-        <p>{t(automatic ? 'Wir prüfen die importierte Adresse. Der Standort muss anschließend bestätigt werden.' : 'Kein Geschäft gefunden? Suche stattdessen nach der Adresse des Gebäudes.')}</p>
+        <p>{t(automatic ? 'Wir prüfen die importierte Adresse. Eindeutige Standorte werden übernommen; andere prüfst du auf der Karte.' : 'Kein Geschäft gefunden? Suche stattdessen nach der Adresse des Gebäudes.')}</p>
         {!normalized && <p role="status">{t('Bitte ergänze Straße, Hausnummer, Postleitzahl und Berlin im Adressfeld.')}</p>}
         {(!automatic || error || (!loading && results === null)) && <button type="button" disabled={!normalized || loading} onClick={() => void search()}>{t(loading ? 'Adresse wird gesucht …' : 'Standort anhand der Adresse suchen')}</button>}
         <small>{t('Nur die öffentliche Geschäftsadresse wird an den Adressdienst gesendet. Keine privaten Adressen eingeben.')} · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a></small>

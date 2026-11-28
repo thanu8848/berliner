@@ -57,7 +57,8 @@ export function nominatimResults(data: unknown, requestedAddress: string): Addre
         const withinRange = range && /^\d+$/.test(requested.house) && Number(requested.house) >= Number(range[1]) && Number(requested.house) <= Number(range[2])
         if (house && !exactHouse && !withinRange) return []
         return [{ latitude, longitude, address: item.display_name.slice(0, 500),
-            approximate: !exactHouse || !postcode }]
+            approximate: !exactHouse || !postcode,
+            ...(exactHouse && postcode ? { verifiedAddress: berlinAddress(requestedAddress)! } : {}) }]
     }).sort((a, b) => Number(a.approximate) - Number(b.approximate)).slice(0, 5)
 }
 
@@ -79,7 +80,7 @@ export class AddressGeocoder {
         if (!this.env.GEOCODER_URL || !this.env.GEOCODER_AGENT) return json({ error: 'unconfigured' }, 503)
         const endpoint = new URL(this.env.GEOCODER_URL)
         if (endpoint.protocol !== 'https:') return json({ error: 'unconfigured' }, 503)
-        const key = 'address-v2|' + endpoint.href + '|' + address.toLocaleLowerCase('de-DE')
+        const key = 'address-v3|' + endpoint.href + '|' + address.toLocaleLowerCase('de-DE')
         const cache = (await this.state.storage.get<CacheEntry[]>('cache') ?? []).filter(entry => entry.until > Date.now())
         const hit = cache.find(entry => entry.key === key)
         if (hit) return json({ results: hit.results })

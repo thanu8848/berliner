@@ -183,3 +183,17 @@ Frontend: gemeinsame laufende Anfragen pro Endpoint/Adresse, Abbruch nach dem le
 fünf Minuten Speicher-Cache (maximal 30 Adressen), zehn Sekunden Timeout. Importwechsel/Schließen
 ignoriert alte Antworten; Rückkehr nutzt fertige Ergebnisse erneut. Keine automatische Wiederholung
 bei Fehler oder Rate-Limit. Backend und dessen globales Limit bleiben unverändert.
+
+
+## Automatische Übernahme eindeutiger Standorte
+
+Aktueller Ablauf: Bei vollständiger Google-Importadresse ohne Standort startet die Suche.
+Genau ein vollständig verifizierter Adresstreffer wird nun ohne Kartenbestätigung übernommen.
+Der Worker kennzeichnet nur Straßen-/Hausnummer-/PLZ-Übereinstimmungen mit `verifiedAddress`.
+Ältere Worker-Antworten ohne dieses Feld bleiben manuell prüfpflichtig. Cacheversion `address-v3`.
+Mehrere Datensätze werden nur bei exakt identischen Koordinaten UND passender verifizierter
+Adresse zusammengefasst. Nahe POI-/Gebäudemittelpunkte bleiben mehrdeutig. Keine Namensübernahme.
+Vorhandene Standorte und manuelle Ortsteilwerte werden nicht überschrieben. Ortsteil folgt
+weiterhin aus lokalen Grenzen, inklusive Warnung an Grenzfällen. „Standort ändern“ bleibt verfügbar.
+Diese Regel ersetzt die frühere generelle Bestätigungspflicht; ungenaue/mehrdeutige Treffer
+benötigen weiterhin eine Kartenprüfung. Die API-Limits und Backend-Architektur bleiben gleich.

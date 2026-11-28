@@ -216,5 +216,8 @@
   "Erkannten Ortsteil übernehmen": "Use detected neighborhood",
   "Ort in Google Maps öffnen": "Open place in Google Maps",
   "Wir prüfen die importierte Adresse. Der Standort muss anschließend bestätigt werden.": "We are checking the imported address. You must then confirm the location.",
-  "Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte.": "Suggested neighborhood: {{name}}. Please check and confirm the location on the map first."
+  "Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte.": "Suggested neighborhood: {{name}}. Please check and confirm the location on the map first.",
+  "Wir prüfen die importierte Adresse. Eindeutige Standorte werden übernommen; andere prüfst du auf der Karte.": "We are checking the imported address. Unambiguous locations are used automatically; others need a map check.",
+  "Standort ändern": "Change location",
+  "Standort anhand der Adresse übernommen. Bei Bedarf kannst du ihn ändern.": "Location taken from the address. You can change it if needed."
 }
