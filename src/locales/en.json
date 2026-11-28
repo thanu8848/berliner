@@ -224,5 +224,11 @@
   "Standort selbst markieren": "Mark location yourself",
   "Vorhandene Geschäfte kannst du direkt auf der Karte antippen und übernehmen.": "Tap existing businesses directly on the map to add them.",
   "Standort wird ermittelt …": "Finding location …",
-  "Weitere Standortvorschläge anzeigen": "Show more location suggestions"
+  "Weitere Standortvorschläge anzeigen": "Show more location suggestions",
+  "Nach einem anderen Ort oder einer Adresse suchen": "Search for another place or an address",
+  "Adressdetails": "Address details",
+  "Über die Adresssuche": "About address search",
+  "Bitte wähle einen Standort.": "Please choose a location.",
+  "Passender Ort gefunden": "Matching place found",
+  "Standortvorschlag {{number}}": "Suggested location {{number}}"
 }

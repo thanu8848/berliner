@@ -1,3 +1,4 @@
+import { compactAddress } from '../services/compactAddress'
 import { loadBoundaries } from '../services/neighborhoodBoundaries'
 import type { Boundary } from '../services/neighborhoodBoundaries'
 import { suggestedNeighborhood, automaticLocation, groupAddressCandidates } from '../services/importLocationSuggestion'
@@ -56,26 +57,31 @@ export default function AddressSearch({ automatic = false, address, name, onPrev
     }, [singleReliable])
     const neighborhoodSuggestion = results && boundaries ? suggestedNeighborhood(results, boundaries) : null
     const renderCandidate = (place: AddressLocation, index: number) => <li className="catalog-result" key={`${place.latitude}:${place.longitude}:${index}`}>
-                <strong>{name || t('Neuer Ort')}</strong><span>{place.address}</span>
+                <strong>{name || t('Neuer Ort')}</strong><span>{compactAddress(place.address)}</span>
+                {results && results.length > 1 && <small>{t('Standortvorschlag {{number}}', { number: index + 1 })}</small>}
                 {place.approximate && <small>{t('Nur ungefähr: Bitte setze den Marker am richtigen Gebäude.')}</small>}
                 <button type="button" onClick={() => onPreview(place, name)}>{t('Auf Karte prüfen')}</button>
+                <details className="candidate-details"><summary>{t('Adressdetails')}</summary><p>{place.address}</p><small>{place.latitude.toFixed(6)}, {place.longitude.toFixed(6)}</small></details>
             </li>
     return <section className="address-search" aria-label={t('Adresse suchen')}>
-        <p>{t(automatic ? 'Wir prüfen die importierte Adresse. Eindeutige Standorte werden übernommen; andere prüfst du auf der Karte.' : 'Kein Geschäft gefunden? Suche stattdessen nach der Adresse des Gebäudes.')}</p>
         {!normalized && <p role="status">{t('Bitte ergänze Straße, Hausnummer, Postleitzahl und Berlin im Adressfeld.')}</p>}
-        {(!automatic || error || (!loading && results === null)) && <button type="button" disabled={!normalized || loading} onClick={() => void search()}>{t(loading ? 'Adresse wird gesucht …' : 'Standort anhand der Adresse suchen')}</button>}
-        <small>{t('Nur die öffentliche Geschäftsadresse wird an den Adressdienst gesendet. Keine privaten Adressen eingeben.')} · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a></small>
+        {((!automatic && !results?.length) || error || (!loading && results === null)) && <button type="button" disabled={!normalized || loading} onClick={() => void search()}>{t(loading ? 'Adresse wird gesucht …' : 'Standort anhand der Adresse suchen')}</button>}
         {loading && <p role="status">{t('Adresse wird gesucht …')}</p>}
         {loading && <button type="button" onClick={() => { request.current?.abort(); request.current = null; setLoading(false); searching.current?.(false) }}>{t('Suche abbrechen')}</button>}
         {error && <p role="status">{t(error)}</p>}
         {results?.length === 0 && <p role="status">{t('Keine Adresse in Berlin gefunden. Bitte prüfe die Adresse oder wähle den Standort auf der Karte.')}</p>}
         {results && results.length > 0 && <>
-            <p role="status">{t(results.length === 1 ? 'Möglichen Standort gefunden' : 'Mehrere mögliche Standorte gefunden. Bitte wähle die passende Adresse.')}</p>
-            {neighborhoodSuggestion && <p className="import-hint" role="status">{t('Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte.', { name: neighborhoodSuggestion })}</p>}
+            <p className="search-status" role="status">{t(results.length === 1 ? 'Möglichen Standort gefunden' : 'Bitte wähle einen Standort.')}</p>
             <ul className="catalog-results">{results.slice(0, 1).map(renderCandidate)}</ul>
             {results.length > 1 && <details><summary>{t('Weitere Standortvorschläge anzeigen')}</summary>
-                <ul className="catalog-results">{results.slice(1).map(renderCandidate)}</ul>
+                <ul className="catalog-results">{results.slice(1).map((place, index) => renderCandidate(place, index + 1))}</ul>
             </details>}
         </>}
+        <small className="catalog-source"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a></small>
+        <details className="search-info"><summary>{t('Über die Adresssuche')}</summary>
+        <p>{t(automatic ? 'Wir prüfen die importierte Adresse. Eindeutige Standorte werden übernommen; andere prüfst du auf der Karte.' : 'Kein Geschäft gefunden? Suche stattdessen nach der Adresse des Gebäudes.')}</p>
+        <small>{t('Nur die öffentliche Geschäftsadresse wird an den Adressdienst gesendet. Keine privaten Adressen eingeben.')}</small>
+            {neighborhoodSuggestion && <p className="import-hint" role="status">{t('Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte.', { name: neighborhoodSuggestion })}</p>}
+        </details>
     </section>
 }

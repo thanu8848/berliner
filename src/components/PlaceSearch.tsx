@@ -1,3 +1,4 @@
+import { compactAddress } from '../services/compactAddress'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -41,7 +42,8 @@ export default function PlaceSearch({ name = '', address = '', automatic = false
     const renderResult = (place: OsmPlace) => (
         <li key={place.osmId} className="catalog-result">
             <strong>{place.name}</strong>
-            <span>{t(categoryLabels[place.category])}{place.address ? ` · ${place.address}` : ''}</span>
+            <span>{t(categoryLabels[place.category])}{place.address ? ` · ${compactAddress(place.address)}` : ''}</span>
+            {place.address && compactAddress(place.address) !== place.address && <details className="candidate-details"><summary>{t('Adressdetails')}</summary><p>{place.address}</p></details>}
             {place.cuisine.length > 0 && <small>{place.cuisine.join(', ')}</small>}
             <button type="button" onClick={() => onSelect(place)}>{t('Diesen Ort übernehmen')}</button>
         </li>
@@ -60,10 +62,13 @@ export default function PlaceSearch({ name = '', address = '', automatic = false
         {(error || cancelled) && <p role="status">{t(cancelled ? 'Suche abgebrochen.' : 'Die Suche ist gerade nicht verfügbar. Bitte wähle den Standort auf der Karte.')}
             <button type="button" onClick={() => { setLoading(true); setError(false); setCancelled(false); setAttempt(value => value + 1) }}>{t('Erneut versuchen')}</button></p>}
         {data && <>
-            {!automatic && <small className="catalog-source">{t('Datenstand: {{date}}', { date: new Date(data.sourceDate).toLocaleDateString(i18n.resolvedLanguage) })} · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a> · <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">ODbL</a></small>}
-            {results.length > 0 ? <><ul className="catalog-results">{renderResult(results[0])}</ul>
+
+            {results.length > 0 ? <>{automatic && <p className="search-status" role="status">{t('Passender Ort gefunden')}</p>}<ul className="catalog-results">{renderResult(results[0])}</ul>
                 {results.length > 1 && <details><summary>{t('Weitere Ergebnisse anzeigen')} ({results.length - 1})</summary><ul className="catalog-results">{results.slice(1).map(renderResult)}</ul></details>}
             </> : <p role="status">{t(automatic ? location ? 'Keine passenden Ergänzungen gefunden. Dein ausgewählter Standort bleibt erhalten.' : 'Kein eindeutiger Treffer gefunden. Du kannst den Standort selbst auf der Karte auswählen.' : query.trim().length >= 2 || location ? 'Keine passenden Orte gefunden. Du kannst manuell fortfahren.' : 'Gib mindestens zwei Zeichen ein.')}</p>}
+        </>}
+        {data && <>
+            {!automatic && <small className="catalog-source">{t('Datenstand: {{date}}', { date: new Date(data.sourceDate).toLocaleDateString(i18n.resolvedLanguage) })} · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a> · <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">ODbL</a></small>}
         </>}
         {automatic && data && results.length > 0 && <small>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></small>}
         {automatic && !location && !loading && (error || cancelled || (data && !results.length)) && fallback}

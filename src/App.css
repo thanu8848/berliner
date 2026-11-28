@@ -133,3 +133,17 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: #195f4e; }
 
 .location-summary > span { min-width: 0; overflow-wrap: anywhere; }
 .location-summary > span > span { display: block; font-size: .9rem; }
+
+.form-grid > .enrichment { grid-column: 1 / -1; min-width: 0; padding-bottom: 0; border-bottom: 0; }
+.place-search-toggle { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 68px; padding: 12px 14px; background: #edf4ec; border: 1px solid #8aa997; color: #195f4e; }
+.place-search-toggle:hover { background: #e1eddf; border-color: #195f4e; }
+.place-search-toggle:focus-visible { outline: 3px solid #195f4e; outline-offset: 3px; }
+.place-search-toggle > svg { width: 22px; height: 22px; flex-shrink: 0; }
+.place-search-toggle > span { display: grid; gap: 3px; flex: 1; min-width: 0; }
+.place-search-toggle[aria-expanded="true"] .search-chevron { transform: rotate(180deg); }
+.enrichment .search-status { margin: 4px 0 8px; font-size: 14px; }
+.enrichment .catalog-search { margin-top: 0; }
+.enrichment .catalog-results { margin: 0; }
+.candidate-details, .search-info { font-size: 13px; color: #60766c; overflow-wrap: anywhere; }
+.candidate-details summary, .search-info summary { min-height: 44px; display: list-item; padding: 12px 0; }
+.candidate-details p { margin: 0 0 8px; }
