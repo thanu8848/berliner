@@ -214,5 +214,7 @@
   "Ortsteil anhand des Standorts erkannt. Du kannst ihn korrigieren.": "Ortsteil anhand des Standorts erkannt. Du kannst ihn korrigieren.",
   "Zum Standort passt {{name}}. Bitte prüfe deine Ortsteil-Auswahl.": "Zum Standort passt {{name}}. Bitte prüfe deine Ortsteil-Auswahl.",
   "Erkannten Ortsteil übernehmen": "Erkannten Ortsteil übernehmen",
-  "Ort in Google Maps öffnen": "Ort in Google Maps öffnen"
+  "Ort in Google Maps öffnen": "Ort in Google Maps öffnen",
+  "Wir prüfen die importierte Adresse. Der Standort muss anschließend bestätigt werden.": "Wir prüfen die importierte Adresse. Der Standort muss anschließend bestätigt werden.",
+  "Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte.": "Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte."
 }

@@ -1,3 +1,4 @@
+import { shouldAutoLookup } from '../services/importLocationSuggestion'
 import { loadBoundaries, locateNeighborhood } from '../services/neighborhoodBoundaries'
 import type { Boundary } from '../services/neighborhoodBoundaries'
 import AddressSearch from './AddressSearch'
@@ -145,6 +146,7 @@ function PlaceForm({
 
     // The parent owns coordinates, so returning to the map never remounts this form.
     const formLocation = validLocation(selectedLocation) ? selectedLocation : null
+    const autoAddress = Boolean(googleMapsSuggestion) && shouldAutoLookup(googleAddress, address, Boolean(formLocation))
     const [boundaries, setBoundaries] = useState<Boundary[]>()
     const [boundaryError, setBoundaryError] = useState(false)
     const hasLocation = Boolean(formLocation)
@@ -166,7 +168,9 @@ function PlaceForm({
         setAddress(current => current.trim() ? current : place.address ?? '')
         setCuisine(current => current.trim() ? current : place.cuisine.join(', '))
         setWebsite(current => current.trim() ? current : place.website ?? '')
-        setNeighborhood(current => current || (place.neighborhood && getDistrictForNeighborhood(place.neighborhood) ? place.neighborhood : ''))
+        if (!neighborhood && place.neighborhood && getDistrictForNeighborhood(place.neighborhood)) {
+            setNeighborhoodInput(current => current ?? place.neighborhood!)
+        }
         if (!categoryChosen) { setCategory(place.category); setCategoryChosen(true) }
         if (!formLocation) onChooseLocation({ latitude: place.latitude, longitude: place.longitude })
         setEnriched(true)
@@ -360,7 +364,8 @@ function PlaceForm({
                 </div>
                 <section className="enrichment">
                     <button type="button" aria-expanded={searchOpen} onClick={() => setSearchOpen(open => !open)}>{t(searchOpen ? 'Suche schließen' : 'Anderen Ort suchen')}</button>
-                    {!searchOpen && !enriched && googleMapsSuggestion && active && <PlaceSearch automatic fallback={<AddressSearch key={address} address={address} name={name} onPreview={onPreviewAddress} />} name={name} address={address} location={formLocation} onSelect={enrichFromCatalog} />}
+                    {!searchOpen && !enriched && googleMapsSuggestion && active && !autoAddress && <PlaceSearch automatic fallback={<AddressSearch key={address} address={address} name={name} onPreview={onPreviewAddress} />} name={name} address={address} location={formLocation} onSelect={enrichFromCatalog} />}
+                    {!searchOpen && !enriched && autoAddress && active && <AddressSearch key={address} automatic address={address} name={name} onPreview={onPreviewAddress} />}
                     {enriched && <p role="status">{t('Fehlende Angaben ergänzt. Bitte prüfe die Angaben.')}</p>}
                     {searchOpen && active && <PlaceSearch name={name} location={formLocation} category={categoryChosen ? category : undefined} onSelect={enrichFromCatalog} />}
                 </section>

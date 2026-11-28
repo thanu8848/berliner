@@ -19,7 +19,7 @@ export function geocodeEndpoint(resolver: string | undefined): string | null {
     if (!resolver) return null
     try { const url = new URL(resolver); url.pathname = '/geocode'; url.search = ''; url.hash = ''; return url.href } catch { return null }
 }
-export async function lookupAddress(address: string, endpoint: string | null, signal: AbortSignal): Promise<AddressLocation[]> {
+async function fetchAddress(address: string, endpoint: string | null, signal: AbortSignal): Promise<AddressLocation[]> {
     const normalized = berlinAddress(address)
     if (!normalized) throw new Error('incomplete')
     if (!endpoint) throw new Error('unconfigured')
@@ -44,4 +44,50 @@ export function addressParts(input: string): { street: string; house: string; po
 export function normalizeStreet(value: string): string {
     return value.toLowerCase().replace(/str\.(?=\s|$)/g, 'straße').replace(/ß/g, 'ss')
         .normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
+}
+
+// Shared, bounded in-memory cache. No persisted drafts or coordinates are changed.
+const addressCache = new Map<string, { until: number; results: AddressLocation[] }>()
+const addressRequests = new Map<string, { controller: AbortController; promise: Promise<AddressLocation[]>; users: number }>()
+export function lookupAddress(address: string, endpoint: string | null, signal: AbortSignal): Promise<AddressLocation[]> {
+    if (signal.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'))
+    const normalized = berlinAddress(address)
+    if (!normalized) return Promise.reject(new Error('incomplete'))
+    if (!endpoint) return Promise.reject(new Error('unconfigured'))
+    const key = endpoint + '|' + normalized.toLocaleLowerCase('de-DE')
+    const cached = addressCache.get(key)
+    if (cached && cached.until > Date.now()) return Promise.resolve(cached.results)
+    let entry = addressRequests.get(key)
+    if (!entry || entry.controller.signal.aborted) {
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(new Error('timeout')), 10000)
+        const created = { controller, users: 0, promise: Promise.resolve([] as AddressLocation[]) }
+        created.promise = fetchAddress(normalized, endpoint, controller.signal).then(results => {
+            if (controller.signal.aborted) throw new Error('timeout')
+            addressCache.delete(key)
+            addressCache.set(key, { until: Date.now() + 300000, results })
+            if (addressCache.size > 30) addressCache.delete(addressCache.keys().next().value!)
+            return results
+        }).catch(error => { if (controller.signal.aborted && controller.signal.reason instanceof Error && controller.signal.reason.message === 'timeout') throw new Error('timeout'); throw error })
+            .finally(() => { clearTimeout(timer); if (addressRequests.get(key) === created) addressRequests.delete(key) })
+        entry = created
+        addressRequests.set(key, entry)
+    }
+    const shared = entry
+    shared.users++
+    return new Promise((resolve, reject) => {
+        let done = false
+        const finish = (action: () => void) => {
+            if (done) return
+            done = true
+            signal.removeEventListener('abort', cancel)
+            shared.users--
+            // StrictMode cleanup/setup can attach a replacement consumer in the same turn.
+            queueMicrotask(() => { if (!shared.users && addressRequests.get(key) === shared) shared.controller.abort() })
+            action()
+        }
+        const cancel = () => finish(() => reject(new DOMException('Aborted', 'AbortError')))
+        signal.addEventListener('abort', cancel, { once: true })
+        shared.promise.then(result => finish(() => resolve(result)), error => finish(() => reject(error)))
+    })
 }

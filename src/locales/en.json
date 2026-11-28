@@ -214,5 +214,7 @@
   "Ortsteil anhand des Standorts erkannt. Du kannst ihn korrigieren.": "Neighborhood identified from the location. You can correct it.",
   "Zum Standort passt {{name}}. Bitte prüfe deine Ortsteil-Auswahl.": "This location is in {{name}}. Please check your selected neighborhood.",
   "Erkannten Ortsteil übernehmen": "Use detected neighborhood",
-  "Ort in Google Maps öffnen": "Open place in Google Maps"
+  "Ort in Google Maps öffnen": "Open place in Google Maps",
+  "Wir prüfen die importierte Adresse. Der Standort muss anschließend bestätigt werden.": "We are checking the imported address. You must then confirm the location.",
+  "Ortsteilvorschlag: {{name}}. Bitte prüfe und bestätige zuerst den Standort auf der Karte.": "Suggested neighborhood: {{name}}. Please check and confirm the location on the map first."
 }

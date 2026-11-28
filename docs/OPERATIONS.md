@@ -164,3 +164,22 @@ Im Abstand bis zehn Meter zu einer Grenze bzw. außerhalb/bei Mehrdeutigkeit wir
 zugeordnet. Manuelle und vorhandene Angaben bleiben erhalten; Abweichungen werden angezeigt.
 Automatisch abgeleitete Angaben folgen Standortkorrekturen, bis der Nutzer das Feld selbst bearbeitet.
 Keine zusätzliche Geocoding-Anfrage, kein neues localStorage-Schema.
+
+
+## Automatische Adressprüfung nach Google-Import
+
+Eine vollständige, unveränderte importierte Geschäftsadresse startet bei fehlenden Koordinaten
+nun automatisch die vorhandene `/geocode`-Suche. Keine Anfragen pro Tastendruck: nach Änderungen
+an der Adresse bleibt die explizite Suchaktion verfügbar. Bei schon bestätigten Koordinaten
+wird ausschließlich die lokale Ortsteilzuordnung verwendet. Die manuelle Geschäftssuche bleibt
+unter „Anderen Ort suchen“ verfügbar; bei unvollständiger Adresse bleibt der bisherige Katalogweg.
+
+Ein einzelner verlässlicher Adresstreffer kann vor Bestätigung einen ausdrücklich als Vorschlag
+beschrifteten Ortsteil anzeigen. Mehrere Treffer werden nicht zu einer angeblich sicheren Adresse
+zusammengefasst, selbst wenn sie im selben Ortsteil liegen. Vorschläge ändern weder Formularfelder
+noch Koordinaten. Die Kartenbestätigung bleibt erforderlich; manuelle Ortsteil-Overrides bleiben erhalten.
+
+Frontend: gemeinsame laufende Anfragen pro Endpoint/Adresse, Abbruch nach dem letzten Verbraucher,
+fünf Minuten Speicher-Cache (maximal 30 Adressen), zehn Sekunden Timeout. Importwechsel/Schließen
+ignoriert alte Antworten; Rückkehr nutzt fertige Ergebnisse erneut. Keine automatische Wiederholung
+bei Fehler oder Rate-Limit. Backend und dessen globales Limit bleiben unverändert.

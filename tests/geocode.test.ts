@@ -96,7 +96,7 @@ test('client handles unavailable, timeout, missing configuration, multiple resul
         assert.equal((await lookupAddress(address, 'https://test/geocode', signal)).length, 2)
         const controller = new AbortController()
         globalThis.fetch = async (_url, options) => new Promise((_resolve, reject) => options?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError'))))
-        const promise = lookupAddress(address, 'https://test/geocode', controller.signal)
+        const promise = lookupAddress('Turmstraße 34, 10551 Berlin', 'https://test/geocode', controller.signal)
         controller.abort()
         await assert.rejects(promise, { name: 'AbortError' })
     } finally { globalThis.fetch = originalFetch }
